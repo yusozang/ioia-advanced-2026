@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<!-- 2026 IOIA 심화과정 온라인 교육 홍보·접수·결제 단일 페이지 사이트 -->
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2026 IOIA 심화과정 — 온라인 교육 신청</title>
+<meta name="description" content="2026 IOIA 심화과정 온라인 교육. 매스밸런스의 이해와 앱 활용, 친환경 인증에 ISO 17065 적용하기. IOIA 공식 수료증 발급. 선착순 접수." />
+<meta property="og:title" content="2026 IOIA 심화과정 온라인 교육" />
+<meta property="og:description" content="매스밸런스 / ISO 17065 두 주제, 8시간 하루완성과정. IOIA 공식 수료증. 선착순 각 회차 20명." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --primary:#800000;
+  --secondary:#9fa0a0;
+  --accent:#ffab40;
+  --ink:#222;
+  --bg:#ffffff;
+  --soft:#faf6f6;
+  --line:#e7e1e1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;color:var(--ink);background:var(--bg);line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+img{max-width:100%;display:block}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}
+section{padding:64px 0}
+h2.sec{font-size:1.7rem;color:var(--primary);font-weight:900;margin-bottom:8px}
+.sub{color:var(--secondary);margin-bottom:28px;font-weight:500}
+
+/* 헤더 */
+header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:62px}
+.nav .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--primary)}
+.nav .brand img{height:22px;width:auto}
+.nav ul{display:flex;gap:22px;list-style:none}
+.nav ul a{color:var(--ink);font-weight:500;font-size:.95rem}
+.nav ul a:hover{color:var(--primary)}
+.nav .cta{background:var(--primary);color:#fff;padding:9px 16px;border-radius:8px;font-weight:700;font-size:.9rem}
+@media(max-width:720px){.nav ul{display:none}}
+
+/* 히어로 */
+.hero{background:linear-gradient(135deg,#800000 0%,#5e0000 100%);color:#fff;padding:84px 0 76px}
+.hero .badge{display:inline-block;background:var(--accent);color:#3a2400;font-weight:700;font-size:.82rem;padding:5px 12px;border-radius:999px;margin-bottom:18px}
+.hero h1{font-size:2.55rem;font-weight:900;line-height:1.25;letter-spacing:-.5px}
+.hero p.lead{margin-top:16px;font-size:1.12rem;opacity:.94;max-width:640px}
+.hero .meta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.hero .meta span{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);padding:8px 14px;border-radius:8px;font-size:.92rem}
+.hero .btns{margin-top:32px;display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-block;padding:13px 24px;border-radius:9px;font-weight:700;font-size:1rem;cursor:pointer;border:none}
+.btn-accent{background:var(--accent);color:#3a2400}
+.btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6)}
+.btn-primary{background:var(--primary);color:#fff}
+@media(max-width:720px){.hero h1{font-size:1.9rem}}
+
+/* 과정 카드 */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:720px){.cards{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:14px;padding:26px;background:var(--soft);transition:.2s}
+.card:hover{box-shadow:0 8px 28px rgba(128,0,0,.08);transform:translateY(-2px)}
+.card .tag{display:inline-block;background:var(--primary);color:#fff;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:6px;margin-bottom:12px}
+.card h3{font-size:1.25rem;color:var(--primary);font-weight:800;margin-bottom:10px}
+.card .dates{font-weight:700;margin:10px 0;color:var(--ink)}
+.card .deadline{color:#b03030;font-weight:700;font-size:.92rem}
+.card ul{margin:14px 0 0 0;padding-left:18px}
+.card ul li{margin:5px 0;font-size:.94rem}
+
+/* 일반 표 */
+table{border-collapse:collapse;width:100%;margin-top:8px;font-size:.94rem}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line)}
+thead th{color:var(--primary);font-weight:700;border-bottom:2px solid var(--primary)}
+tbody tr:hover{background:var(--soft)}
+
+/* 안내 박스 */
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
+@media(max-width:720px){.info-grid{grid-template-columns:1fr}}
+.info{border:1px solid var(--line);border-radius:12px;padding:22px;text-align:center}
+.info .big{font-size:1.7rem;font-weight:900;color:var(--primary);line-height:1.2}
+.info .lbl{color:var(--secondary);font-size:.9rem;margin-top:6px}
+.callout{border-left:4px solid var(--accent);background:#fffaf3;padding:16px 20px;border-radius:8px;margin-top:24px;font-size:.96rem}
+
+/* 폼 */
+#apply{background:var(--soft)}
+.form-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:32px;max-width:640px;margin:0 auto}
+.form-row{margin-bottom:18px}
+.form-row label{display:block;font-weight:700;font-size:.92rem;margin-bottom:6px}
+.form-row .req{color:var(--primary)}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:9px;font-size:1rem;font-family:inherit;background:#fff}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(128,0,0,.08)}
+.form-note{font-size:.85rem;color:var(--secondary);margin-top:6px}
+.form-submit{width:100%;padding:15px;font-size:1.05rem;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+.form-submit:hover{background:#6a0000}
+.form-status{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:.95rem;display:none}
+.form-status.ok{display:block;background:#eef8ee;color:#1f7a1f;border:1px solid #bfe3bf}
+.form-status.err{display:block;background:#fdecec;color:#b03030;border:1px solid #f0c2c2}
+
+/* 결제 */
+.pay-box{border:1px solid var(--line);border-radius:14px;padding:28px;text-align:center;max-width:640px;margin:0 auto;background:#fff}
+.pay-box .price{font-size:2.2rem;font-weight:900;color:var(--primary)}
+.pay-box .price small{font-size:1rem;font-weight:500;color:var(--secondary)}
+
+/* 푸터 */
+footer{background:#2a1414;color:#e9dede;padding:46px 0;font-size:.9rem}
+footer .frow{display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;align-items:center}
+footer img{height:26px;opacity:.95}
+footer a{color:var(--accent)}
+.faq dt{font-weight:700;color:var(--primary);margin-top:18px}
+.faq dd{margin:6px 0 0 0;color:#444}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand"><img src="assets/isidor-logo.png" alt="이시도르 지속가능연구소" /></div>
+    <ul>
+      <li><a href="#courses">과정</a></li>
+      <li><a href="#schedule">일정</a></li>
+      <li><a href="#curriculum">커리큘럼</a></li>
+      <li><a href="#enroll">모집안내</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="cta" href="#apply">신청하기</a>
+  </div>
+</header>
+
+<!-- 히어로 -->
+<div class="hero">
+  <div class="wrap">
+    <span class="badge">IOIA 공식 수료증 발급 · 온라인 실시간</span>
+    <h1>2026 IOIA 심화과정<br />온라인 교육</h1>
+    <p class="lead">국제유기심사원협회(IOIA) 협력기관 이시도르 지속가능연구소가 운영하는 심화 실무 교육입니다. 매스밸런스와 ISO 17065, 두 핵심 주제를 하루완성 8시간 과정으로 집중합니다.</p>
+    <div class="meta">
+      <span>📅 9월 매스밸런스 · 10월 ISO 17065</span>
+      <span>🖥 온라인 실시간(Zoom)</span>
+      <span>⏱ 09:00–18:00 (8시간)</span>
+      <span>👥 회차당 선착순 20명</span>
+    </div>
+    <div class="btns">
+      <a class="btn btn-accent" href="#apply">지금 신청하기</a>
+      <a class="btn btn-ghost" href="#courses">과정 살펴보기</a>
+    </div>
+  </div>
+</div>
+
+<!-- 과정 소개 -->
+<section id="courses">
+  <div class="wrap">
+    <h2 class="sec">두 가지 심화 주제</h2>
+    <p class="sub">각 주제는 동일한 커리큘럼으로 목·금 2회 진행되며, 편한 하루를 선택해 수강합니다.</p>
+    <div class="cards">
+      <div class="card">
+        <span class="tag">9월 과정</span>
+        <h3>매스밸런스의 이해와 앱 활용</h3>
+        <p class="dates">2026년 9월 17일(목) · 18일(금)</p>
+        <p class="deadline">접수 마감: 2026년 7월 31일 (선착순 마감)</p>
+        <ul>
+          <li>매스밸런스 개념·원리, 손실률·수율 산정</li>
+          <li>농산물·축산물 단계별 투입·산출 추적</li>
+          <li>가공·취급자 장부 점검과 전용 앱 활용</li>
+          <li>Audit Trail 단계별 검증 실습</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag">10월 과정</span>
+        <h3>친환경 인증에 ISO 17065 적용하기</h3>
+        <p class="dates">2026년 10월 15일(목) · 16일(금)</p>
+        <p class="deadline">접수 마감: 2026년 8월 31일 (선착순 마감)</p>
+        <ul>
+          <li>ISO/IEC 17065 적용 매핑·지정기준 비교</li>
+          <li>친환경관리시스템 API 활용·자체 시스템 구성</li>
+          <li>내부감사(Internal Audit) 시행 방법</li>
+          <li>KOLAS 인정 절차 및 사전 준비</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 일정 -->
+<section id="schedule" style="background:var(--soft)">
+  <div class="wrap">
+    <h2 class="sec">교육 일정</h2>
+    <p class="sub">같은 주제의 목·금 회차는 동일한 내용으로 운영됩니다. 하루를 선택해 수강하세요.</p>
+    <table>
+      <thead><tr><th>회차</th><th>주제</th><th>일정</th><th>시간</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>매스밸런스의 이해와 앱 활용</td><td>9월 17일 (목)</td><td>09:00 ~ 18:00</td></tr>
+        <tr><td>2</td><td>매스밸런스의 이해와 앱 활용</td><td>9월 18일 (금)</td><td>09:00 ~ 18:00</td></tr>
+        <tr><td>3</td><td>친환경 인증에 ISO 17065 적용하기</td><td>10월 15일 (목)</td><td>09:00 ~ 18:00</td></tr>
+        <tr><td>4</td><td>친환경 인증에 ISO 17065 적용하기</td><td>10월 16일 (금)</td><td>09:00 ~ 18:00</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:36px;color:var(--primary);font-weight:800;font-size:1.15rem">하루완성과정 표준 시간표</h3>
+    <table>
+      <thead><tr><th>시간</th><th>세션</th><th>내용</th></tr></thead>
+      <tbody>
+        <tr><td>09:00 ~ 09:15</td><td>개회·오리엔테이션</td><td>인사, 교육 목표, IOIA 소개, 사전 설문</td></tr>
+        <tr><td>09:15 ~ 11:00</td><td>Module 1 (105분)</td><td>강의 (개념·원리)</td></tr>
+        <tr><td>11:15 ~ 13:00</td><td>Module 2 (105분)</td><td>강의·사례 분석</td></tr>
+        <tr><td>13:00 ~ 14:00</td><td>중식</td><td>점심 휴식 (1시간)</td></tr>
+        <tr><td>14:00 ~ 15:45</td><td>Module 3 (105분)</td><td>도구·앱 활용 / 적용</td></tr>
+        <tr><td>16:00 ~ 17:45</td><td>Module 4 (105분)</td><td>그룹 실습 (Breakout Rooms)</td></tr>
+        <tr><td>17:45 ~ 18:00</td><td>시험·종강</td><td>평가(IOIA Exam Form), 만족도 조사</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 커리큘럼 -->
+<section id="curriculum">
+  <div class="wrap">
+    <h2 class="sec">수료 기준</h2>
+    <p class="sub">모든 교육은 종료 시 이수 평가를 실시하며, 기준 충족 시 IOIA 공식 수료증을 발급합니다.</p>
+    <div class="info-grid">
+      <div class="info"><div class="big">8시간</div><div class="lbl">하루완성 순수 교육시간</div></div>
+      <div class="info"><div class="big">80%↑</div><div class="lbl">수료증 발급 합격 기준</div></div>
+      <div class="info"><div class="big">30일</div><div class="lbl">사후 다시보기 제공</div></div>
+    </div>
+    <div class="callout">
+      <strong>IOIA 공식 수료증.</strong> 시험(객관식·단답형 10~15문제)에서 만점의 80% 이상을 획득한 교육생에게 IOIA 명의 수료증을 발급하여 심사원 자격 유지·갱신에 활용할 수 있습니다.
+    </div>
+  </div>
+</section>
+
+<!-- 모집 안내 -->
+<section id="enroll" style="background:var(--soft)">
+  <div class="wrap">
+    <h2 class="sec">모집 안내</h2>
+    <p class="sub">친환경·유기 인증심사원, 인증기관 실무자, 인정 준비 인증기관 임직원 대상.</p>
+    <div class="info-grid">
+      <div class="info"><div class="big">20명</div><div class="lbl">각 회차(날짜)당 정원 · 선착순</div></div>
+      <div class="info"><div class="big">7/31</div><div class="lbl">9월 과정 접수 마감</div></div>
+      <div class="info"><div class="big">8/31</div><div class="lbl">10월 과정 접수 마감</div></div>
+    </div>
+    <div class="callout">
+      정원이 차면 접수 마감일 이전이라도 조기 마감됩니다. 같은 주제의 목·금 두 회차 중 <strong>참여 가능한 하루</strong>를 선택해 신청하세요.
+    </div>
+  </div>
+</section>
+
+<!-- 신청 폼 -->
+<section id="apply">
+  <div class="wrap">
+    <h2 class="sec" style="text-align:center">교육 신청</h2>
+    <p class="sub" style="text-align:center">아래 양식을 작성해 주시면 접수 확인 후 결제 안내를 보내드립니다.</p>
+    <form class="form-card" id="applyForm">
+      <div class="form-row">
+        <label>성명 <span class="req">*</span></label>
+        <input type="text" name="이름" required placeholder="홍길동" />
+      </div>
+      <div class="form-row">
+        <label>소속 기관 <span class="req">*</span></label>
+        <input type="text" name="소속" required placeholder="○○인증원" />
+      </div>
+      <div class="form-row">
+        <label>이메일 <span class="req">*</span></label>
+        <input type="email" name="이메일" required placeholder="name@example.com" />
+      </div>
+      <div class="form-row">
+        <label>연락처 <span class="req">*</span></label>
+        <input type="tel" name="연락처" required placeholder="010-0000-0000" />
+      </div>
+      <div class="form-row">
+        <label>신청 회차 <span class="req">*</span></label>
+        <select name="신청회차" required>
+          <option value="" disabled selected>회차를 선택하세요</option>
+          <option>매스밸런스 — 9월 17일(목)</option>
+          <option>매스밸런스 — 9월 18일(금)</option>
+          <option>ISO 17065 — 10월 15일(목)</option>
+          <option>ISO 17065 — 10월 16일(금)</option>
+        </select>
+        <div class="form-note">정원(회차당 20명) 초과 시 대기 접수로 안내드립니다.</div>
+      </div>
+      <div class="form-row">
+        <label>문의 사항 (선택)</label>
+        <textarea name="문의" rows="3" placeholder="궁금한 점을 적어주세요"></textarea>
+      </div>
+      <button type="submit" class="form-submit">신청서 제출</button>
+      <div class="form-status" id="formStatus"></div>
+      <p class="form-note" style="margin-top:14px;text-align:center">제출 시 입력하신 정보는 접수 처리 목적으로만 사용됩니다.</p>
+    </form>
+  </div>
+</section>
+
+<!-- 결제 -->
+<section id="pay" style="background:var(--soft)">
+  <div class="wrap">
+    <h2 class="sec" style="text-align:center">수강료 결제</h2>
+    <p class="sub" style="text-align:center">접수 확인 후 아래 버튼으로 결제하실 수 있습니다.</p>
+    <div class="pay-box">
+      <div class="price">500,000원 <small>/ 1인 · 1과정</small></div>
+      <p style="margin:14px 0 22px;color:#555">전자교재·30일 다시보기·수료 평가·IOIA 수료증 발급 포함</p>
+      <a class="btn btn-primary" id="payBtn" href="#" style="font-size:1.05rem;padding:14px 34px">카드로 결제하기</a>
+      <p class="form-note" id="payNote" style="margin-top:16px"></p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="wrap">
+    <h2 class="sec">자주 묻는 질문</h2>
+    <dl class="faq">
+      <dt>같은 주제를 목·금 두 번 들어야 하나요?</dt>
+      <dd>아니요. 목요일과 금요일 회차는 내용이 동일합니다. 편한 하루만 선택해 수강하시면 됩니다.</dd>
+      <dt>수료증은 어떻게 발급되나요?</dt>
+      <dd>교육 종료 후 IOIA Exam Form으로 평가하며, 80% 이상 득점 시 IOIA 공식 수료증을 발급합니다.</dd>
+      <dt>온라인은 어떤 방식인가요?</dt>
+      <dd>Zoom 기반 실시간 화상교육이며, 그룹 실습은 Breakout Room으로 진행합니다. 교육 후 30일간 다시보기를 제공합니다.</dd>
+      <dt>접수가 마감되면 어떻게 하나요?</dt>
+      <dd>각 회차 정원(20명)이 차면 조기 마감됩니다. 마감 시 대기 접수로 안내드리며, 같은 주제의 다른 요일 회차를 권해드립니다.</dd>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap frow">
+    <div>
+      <img src="assets/isidor-logo-white.png" alt="이시도르 지속가능연구소" />
+      <p style="margin-top:12px">주관 이시도르 지속가능연구소 · IOIA 협력기관<br />문의 <a href="mailto:isidor.yu@gmail.com">isidor.yu@gmail.com</a></p>
+    </div>
+    <div style="text-align:right;opacity:.8">
+      <p>2026 IOIA 심화과정 온라인 교육</p>
+      <p>강사 유병덕 (IOIA APC Member, Lead Trainer)</p>
+      <p style="margin-top:8px;font-size:.82rem">© 2026 Isidor Sustainability Research Institute</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ===== 설정값 — 배포 후 실제 값으로 교체하세요 =====
+// Formspree 폼 엔드포인트(무료 가입 후 발급): https://formspree.io
+// 미설정 시 신청 버튼이 이메일 클라이언트(mailto)로 대체 동작합니다.
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/REPLACE_WITH_YOUR_FORM_ID";
+const CONTACT_EMAIL = "isidor.yu@gmail.com";
+
+// 토스페이먼츠/스트라이프 Payment Link URL.
+// 미설정 시 결제 버튼은 안내문을 표시하고 비활성화됩니다.
+const PAYMENT_LINK = "";
+// ====================================================
+
+// --- 신청 폼 처리 ---
+const form = document.getElementById("applyForm");
+const statusEl = document.getElementById("formStatus");
+
+form.addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const data = new FormData(form);
+  const useFormspree = FORMSPREE_ENDPOINT && !FORMSPREE_ENDPOINT.includes("REPLACE_WITH");
+
+  if (useFormspree) {
+    statusEl.className = "form-status";
+    statusEl.style.display = "block";
+    statusEl.textContent = "전송 중입니다…";
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        body: data,
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) {
+        statusEl.className = "form-status ok";
+        statusEl.textContent = "신청이 접수되었습니다. 확인 후 결제 안내 메일을 보내드리겠습니다.";
+        form.reset();
+      } else {
+        throw new Error("server");
+      }
+    } catch (err) {
+      statusEl.className = "form-status err";
+      statusEl.innerHTML = '전송에 실패했습니다. <a href="mailto:' + CONTACT_EMAIL + '">' + CONTACT_EMAIL + '</a> 로 직접 보내주세요.';
+    }
+  } else {
+    // mailto 대체 동작
+    const lines = [];
+    for (const [k, v] of data.entries()) lines.push(k + ": " + v);
+    const subject = encodeURIComponent("[IOIA 심화과정] 교육 신청 — " + (data.get("이름") || ""));
+    const body = encodeURIComponent(lines.join("\n"));
+    window.location.href = "mailto:" + CONTACT_EMAIL + "?subject=" + subject + "&body=" + body;
+    statusEl.className = "form-status ok";
+    statusEl.textContent = "메일 작성 창이 열립니다. 내용을 확인 후 전송해 주세요.";
+  }
+});
+
+// --- 결제 버튼 처리 ---
+const payBtn = document.getElementById("payBtn");
+const payNote = document.getElementById("payNote");
+if (PAYMENT_LINK) {
+  payBtn.href = PAYMENT_LINK;
+  payBtn.target = "_blank";
+  payBtn.rel = "noopener";
+  payNote.textContent = "안전한 외부 결제창으로 이동합니다.";
+} else {
+  payBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+  });
+  payBtn.style.opacity = ".55";
+  payBtn.style.cursor = "not-allowed";
+  payNote.innerHTML = "결제 링크 준비 중입니다. 신청서를 먼저 제출해 주시면 결제 안내를 메일로 보내드립니다. (문의 <a href='mailto:" + CONTACT_EMAIL + "'>" + CONTACT_EMAIL + "</a>)";
+}
+</script>
+</body>
+</html>

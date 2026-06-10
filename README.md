@@ -10,18 +10,23 @@
 
 GitHub Pages 정적 호스팅. `main` 브랜치 루트의 `index.html`을 서빙합니다.
 
-## 배포 후 설정 (필수 2가지)
+## 결제 방식
 
-`index.html` 하단 `<script>`의 설정값을 실제 값으로 교체하세요.
+**무통장입금(계좌이체)** 으로 운영합니다. 결제 섹션에 계좌가 고정 표시됩니다.
 
-1. **접수 폼 — Formspree**
-   - https://formspree.io 무료 가입 → 새 폼 생성(수신 메일: `isidor.yu@gmail.com`)
-   - 발급된 엔드포인트(`https://formspree.io/f/xxxxxxx`)를 `FORMSPREE_ENDPOINT`에 입력
-   - 미설정 시 신청 버튼은 메일 클라이언트(mailto)로 대체 동작합니다.
+- 입금 은행: **기업은행(IBK)**
+- 계좌번호: **696-010037-04-016**
+- 예금주: **이시도르지속가능연구소(주)**
+- 입금자명은 신청자 본인 성함 · 회차당 20명 입금 순 선착순 확정
 
-2. **결제 — 결제 링크(Payment Link)**
-   - 토스페이먼츠 또는 Stripe에서 50만원 결제 링크를 발급
-   - 해당 URL을 `PAYMENT_LINK`에 입력
-   - 미설정 시 결제 버튼은 "준비 중" 안내를 표시합니다.
+> 추후 카드결제(토스페이먼츠 링크페이 등)로 전환하려면 결제 섹션을 결제 링크 버튼으로 교체하면 됩니다.
+
+## 배포 후 설정 (접수 폼)
+
+`index.html` 하단 `<script>`의 `FORMSPREE_ENDPOINT`를 실제 값으로 교체하세요.
+
+- https://formspree.io 무료 가입 → 새 폼 생성(수신 메일: `isidor.yu@gmail.com`)
+- 발급된 엔드포인트(`https://formspree.io/f/xxxxxxx`)를 `FORMSPREE_ENDPOINT`에 입력
+- 미설정 시 신청 버튼은 메일 클라이언트(mailto)로 대체 동작합니다.
 
 설정 변경은 `index.html` 한 파일만 수정 후 다시 푸시하면 자동 반영됩니다.

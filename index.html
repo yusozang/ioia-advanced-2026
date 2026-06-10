@@ -98,10 +98,17 @@ tbody tr:hover{background:var(--soft)}
 .form-status.ok{display:block;background:#eef8ee;color:#1f7a1f;border:1px solid #bfe3bf}
 .form-status.err{display:block;background:#fdecec;color:#b03030;border:1px solid #f0c2c2}
 
-/* 결제 */
+/* 결제(계좌이체) */
 .pay-box{border:1px solid var(--line);border-radius:14px;padding:28px;text-align:center;max-width:640px;margin:0 auto;background:#fff}
 .pay-box .price{font-size:2.2rem;font-weight:900;color:var(--primary)}
 .pay-box .price small{font-size:1rem;font-weight:500;color:var(--secondary)}
+.bank{margin:8px auto 0;max-width:430px;text-align:left;border:1px dashed var(--line);border-radius:10px}
+.bank-row{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.bank-row:last-child{border-bottom:none}
+.bank-row span{width:80px;color:var(--secondary);font-size:.9rem;flex:none}
+.bank-row strong{font-size:1.05rem;letter-spacing:.2px}
+.copy{margin-left:auto;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.82rem;cursor:pointer;font-family:inherit;flex:none}
+.copy:hover{background:#6a0000}
 
 /* 푸터 */
 footer{background:#2a1414;color:#e9dede;padding:46px 0;font-size:.9rem}
@@ -248,7 +255,7 @@ footer a{color:var(--accent)}
 <section id="apply">
   <div class="wrap">
     <h2 class="sec" style="text-align:center">교육 신청</h2>
-    <p class="sub" style="text-align:center">아래 양식을 작성해 주시면 접수 확인 후 결제 안내를 보내드립니다.</p>
+    <p class="sub" style="text-align:center">아래 양식을 작성하신 뒤 안내된 계좌로 입금해 주시면 접수가 확정됩니다.</p>
     <form class="form-card" id="applyForm">
       <div class="form-row">
         <label>성명 <span class="req">*</span></label>
@@ -288,16 +295,24 @@ footer a{color:var(--accent)}
   </div>
 </section>
 
-<!-- 결제 -->
+<!-- 결제(계좌이체 안내) -->
 <section id="pay" style="background:var(--soft)">
   <div class="wrap">
-    <h2 class="sec" style="text-align:center">수강료 결제</h2>
-    <p class="sub" style="text-align:center">접수 확인 후 아래 버튼으로 결제하실 수 있습니다.</p>
+    <h2 class="sec" style="text-align:center">수강료 안내 및 입금</h2>
+    <p class="sub" style="text-align:center">신청서 제출 후 아래 계좌로 입금해 주시면 접수가 확정됩니다.</p>
     <div class="pay-box">
       <div class="price">500,000원 <small>/ 1인 · 1과정</small></div>
       <p style="margin:14px 0 22px;color:#555">전자교재·30일 다시보기·수료 평가·IOIA 수료증 발급 포함</p>
-      <a class="btn btn-primary" id="payBtn" href="#" style="font-size:1.05rem;padding:14px 34px">카드로 결제하기</a>
-      <p class="form-note" id="payNote" style="margin-top:16px"></p>
+      <div class="bank">
+        <div class="bank-row"><span>입금 은행</span><strong>기업은행(IBK)</strong></div>
+        <div class="bank-row"><span>계좌번호</span><strong id="acct">696-010037-04-016</strong><button type="button" class="copy" id="copyAcct">복사</button></div>
+        <div class="bank-row"><span>예금주</span><strong>이시도르지속가능연구소(주)</strong></div>
+      </div>
+      <p class="form-note" style="margin-top:18px;line-height:1.8;text-align:left">
+        · <strong>입금자명은 신청자 본인 성함</strong>으로 해주세요. (동명이인 구분이 필요하면 성함 뒤에 소속을 덧붙여 주세요)<br />
+        · 정원(회차당 20명)은 <strong>입금 순서대로 선착순 확정</strong>됩니다. 신청서만 제출하고 미입금 시 접수가 보류될 수 있습니다.<br />
+        · 세금계산서·현금영수증 발행을 원하시면 <a href="mailto:isidor.yu@gmail.com">isidor.yu@gmail.com</a>로 요청해 주세요.
+      </p>
     </div>
   </div>
 </section>
@@ -339,10 +354,7 @@ footer a{color:var(--accent)}
 // 미설정 시 신청 버튼이 이메일 클라이언트(mailto)로 대체 동작합니다.
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/REPLACE_WITH_YOUR_FORM_ID";
 const CONTACT_EMAIL = "isidor.yu@gmail.com";
-
-// 토스페이먼츠/스트라이프 Payment Link URL.
-// 미설정 시 결제 버튼은 안내문을 표시하고 비활성화됩니다.
-const PAYMENT_LINK = "";
+// 결제: 기업은행 696-010037-04-016 (이시도르지속가능연구소(주)) 무통장입금 안내
 // ====================================================
 
 // --- 신청 폼 처리 ---
@@ -387,21 +399,19 @@ form.addEventListener("submit", async function (e) {
   }
 });
 
-// --- 결제 버튼 처리 ---
-const payBtn = document.getElementById("payBtn");
-const payNote = document.getElementById("payNote");
-if (PAYMENT_LINK) {
-  payBtn.href = PAYMENT_LINK;
-  payBtn.target = "_blank";
-  payBtn.rel = "noopener";
-  payNote.textContent = "안전한 외부 결제창으로 이동합니다.";
-} else {
-  payBtn.addEventListener("click", function (e) {
-    e.preventDefault();
+// --- 계좌번호 복사 ---
+const copyBtn = document.getElementById("copyAcct");
+if (copyBtn) {
+  copyBtn.addEventListener("click", function () {
+    const acct = document.getElementById("acct").textContent.trim();
+    navigator.clipboard.writeText(acct).then(function () {
+      const o = copyBtn.textContent;
+      copyBtn.textContent = "복사됨";
+      setTimeout(function () { copyBtn.textContent = o; }, 1500);
+    }).catch(function () {
+      copyBtn.textContent = "복사 실패";
+    });
   });
-  payBtn.style.opacity = ".55";
-  payBtn.style.cursor = "not-allowed";
-  payNote.innerHTML = "결제 링크 준비 중입니다. 신청서를 먼저 제출해 주시면 결제 안내를 메일로 보내드립니다. (문의 <a href='mailto:" + CONTACT_EMAIL + "'>" + CONTACT_EMAIL + "</a>)";
 }
 </script>
 </body>

@@ -37,6 +37,8 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdro
 .nav{display:flex;align-items:center;justify-content:space-between;height:62px}
 .nav .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--primary)}
 .nav .brand img{height:22px;width:auto}
+.nav .brand img.ioia{height:44px}
+.nav .brand .brand-x{color:#bbb;font-weight:400;font-size:.9rem}
 .nav ul{display:flex;gap:22px;list-style:none}
 .nav ul a{color:var(--ink);font-weight:500;font-size:.95rem}
 .nav ul a:hover{color:var(--primary)}
@@ -114,6 +116,8 @@ tbody tr:hover{background:var(--soft)}
 footer{background:#2a1414;color:#e9dede;padding:46px 0;font-size:.9rem}
 footer .frow{display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;align-items:center}
 footer img{height:26px;opacity:.95}
+footer .ioia-chip{display:inline-block;background:#fff;border-radius:8px;padding:6px 10px;margin-top:14px}
+footer .ioia-chip img{height:40px;display:block;opacity:1}
 footer a{color:var(--accent)}
 .faq dt{font-weight:700;color:var(--primary);margin-top:18px}
 .faq dd{margin:6px 0 0 0;color:#444}
@@ -123,12 +127,12 @@ footer a{color:var(--accent)}
 
 <header>
   <div class="wrap nav">
-    <div class="brand"><img src="assets/isidor-logo.png" alt="이시도르 지속가능연구소" /></div>
+    <div class="brand"><img src="assets/isidor-logo.png" alt="이시도르 지속가능연구소" /><span class="brand-x">×</span><img class="ioia" src="assets/ioia-logo.jpg" alt="IOIA — International Organic Inspectors Association" /></div>
     <ul>
-      <li><a href="#courses">과정</a></li>
+      <li><a href="#courses">주제</a></li>
       <li><a href="#schedule">일정</a></li>
       <li><a href="#curriculum">커리큘럼</a></li>
-      <li><a href="#enroll">모집안내</a></li>
+      <li><a href="#enroll">모집</a></li>
       <li><a href="#faq">FAQ</a></li>
     </ul>
     <a class="cta" href="#apply">신청하기</a>
@@ -178,10 +182,8 @@ footer a{color:var(--accent)}
         <p class="dates">2026년 10월 15일(목) · 16일(금)</p>
         <p class="deadline">접수 마감: 2026년 8월 31일 (선착순 마감)</p>
         <ul>
-          <li>ISO/IEC 17065 적용 매핑·지정기준 비교</li>
-          <li>친환경관리시스템 API 활용·자체 시스템 구성</li>
-          <li>내부감사(Internal Audit) 시행 방법</li>
-          <li>KOLAS 인정 절차 및 사전 준비</li>
+          <li>ISO/IEC 17065 기준의 오버뷰 (오전)</li>
+          <li>ISO/IEC 기준과 친환경인증기관 지정기준의 매핑 및 비교 (오후)</li>
         </ul>
       </div>
     </div>
@@ -339,6 +341,7 @@ footer a{color:var(--accent)}
     <div>
       <img src="assets/isidor-logo-white.png" alt="이시도르 지속가능연구소" />
       <p style="margin-top:12px">주관 이시도르 지속가능연구소 · IOIA 협력기관<br />문의 <a href="mailto:isidor.yu@gmail.com">isidor.yu@gmail.com</a></p>
+      <span class="ioia-chip"><img src="assets/ioia-logo.jpg" alt="IOIA — International Organic Inspectors Association" /></span>
     </div>
     <div style="text-align:right;opacity:.8">
       <p>2026 IOIA 심화과정 온라인 교육</p>

@@ -82,12 +82,13 @@ function handleApply_(p) {
   if (SESSIONS.indexOf(sess) === -1) return { ok: false, error: '유효하지 않은 회차입니다.' };
 
   const paid = countPaidBySession_();
-  const isWaitlist = (paid[sess] || 0) >= CAPACITY;
+  const remaining = Math.max(0, CAPACITY - (paid[sess] || 0));
+  const isWaitlist = remaining <= 0;
   const status = isWaitlist ? '대기' : '신청';
   const id = 'A' + new Date().getTime();
   getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, status, '']);
-  try { sendApplyEmail_(email, name, sess, isWaitlist); } catch (e) { /* 메일 실패해도 접수는 유지 */ }
-  return { ok: true, waitlist: isWaitlist };
+  try { sendApplyEmail_(email, name, sess, isWaitlist, remaining); } catch (e) { /* 메일 실패해도 접수는 유지 */ }
+  return { ok: true, waitlist: isWaitlist, remaining: remaining };
 }
 
 function handleList_(p) {
@@ -143,11 +144,11 @@ function fmt_(d) {
 }
 
 // ===== 이메일 (발신 주소 = 스크립트 소유 계정) =====
-function sendApplyEmail_(email, name, sess, isWaitlist) {
+function sendApplyEmail_(email, name, sess, isWaitlist, remaining) {
   const subject = isWaitlist
     ? '[2026 IOIA 심화과정] 대기자로 등록되었습니다'
     : '[2026 IOIA 심화과정] 신청이 접수되었습니다';
-  const body = isWaitlist ? waitlistBody_(name, sess) : applyBody_(name, sess);
+  const body = isWaitlist ? waitlistBody_(name, sess) : applyBody_(name, sess, remaining);
   GmailApp.sendEmail(email, subject, body, { name: FROM_NAME });
 }
 
@@ -155,17 +156,20 @@ function sendConfirmEmail_(email, name, sess) {
   GmailApp.sendEmail(email, '[2026 IOIA 심화과정] 접수가 완료되었습니다', confirmBody_(name, sess), { name: FROM_NAME });
 }
 
-function applyBody_(name, sess) {
+function applyBody_(name, sess, remaining) {
   return name + ' 님, 안녕하세요.\n\n'
     + '2026 IOIA 심화과정 "' + sess + '" 신청이 정상적으로 제출되었습니다.\n'
     + '수강료 입금이 확인되면 접수가 최종 완료됩니다.\n\n'
+    + '· 신청 시점 잔여석: ' + remaining + '석 / 정원 ' + CAPACITY + '명\n\n'
     + '아래 계좌로 입금해 주세요.\n'
     + '· 수강료: 500,000원 (1인 · 1과정)\n'
     + '· 입금 은행: 기업은행(IBK)\n'
     + '· 계좌번호: 696-010037-04-016\n'
     + '· 예금주: 이시도르지속가능연구소(주)\n'
     + '· 입금자명: 신청자 본인 성함\n\n'
-    + '정원(회차당 ' + CAPACITY + '명)은 입금 순서대로 선착순 확정됩니다.\n'
+    + '※ 접수는 입금이 확인된 순서(입금자 순)로 처리됩니다.\n'
+    + '※ 신청서를 제출하셨더라도 입금이 지연되어 그 사이 정원(' + CAPACITY + '명)이 마감되면,\n'
+    + '   해당 회차는 대기자로 순연 처리될 수 있습니다. 빠른 입금을 권해드립니다.\n\n'
     + '입금이 확인되면 "접수 완료" 안내 메일을 다시 보내드리겠습니다.\n\n'
     + '문의: ' + CONTACT + '\n이시도르 지속가능연구소';
 }
@@ -173,9 +177,11 @@ function applyBody_(name, sess) {
 function waitlistBody_(name, sess) {
   return name + ' 님, 안녕하세요.\n\n'
     + '2026 IOIA 심화과정 "' + sess + '" 회차는 정원(' + CAPACITY + '명)이 마감되어\n'
-    + '대기자 명단에 등록되었습니다.\n\n'
-    + '결원이 발생하면 신청 순서대로 개별 안내드리겠습니다.\n'
-    + '다른 회차(특히 ISO 17065 수·목·금 회차) 수강을 원하시면 본 메일에 회신해 주세요.\n\n'
+    + '현재 잔여석이 없어, 대기자 명단에 등록되었습니다. (잔여석: 0석)\n\n'
+    + '접수는 입금이 확인된 순서(입금자 순)로 처리되며,\n'
+    + '결원이 발생하면 대기 신청 순서대로 개별 안내드리겠습니다.\n'
+    + '다른 회차(특히 ISO 17065 수·목·금 회차)에 여석이 있을 수 있으니,\n'
+    + '다른 요일 수강을 원하시면 본 메일에 회신해 주세요.\n\n'
     + '문의: ' + CONTACT + '\n이시도르 지속가능연구소';
 }
 

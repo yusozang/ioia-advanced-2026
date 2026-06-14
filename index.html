@@ -119,6 +119,14 @@ footer img{height:26px;opacity:.95}
 footer .ioia-chip{display:inline-block;background:#fff;border-radius:8px;padding:6px 10px;margin-top:14px}
 footer .ioia-chip img{height:40px;display:block;opacity:1}
 footer a{color:var(--accent)}
+
+/* 맨 위로 버튼 */
+#toTop{position:fixed;right:22px;bottom:22px;width:46px;height:46px;border:none;border-radius:50%;
+  background:var(--primary);color:#fff;font-size:20px;line-height:1;cursor:pointer;z-index:60;
+  box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+#toTop.show{opacity:.92;visibility:visible}
+#toTop:hover{opacity:1;background:#6a0000}
+@media(max-width:720px){#toTop{right:16px;bottom:16px;width:42px;height:42px}}
 .faq dt{font-weight:700;color:var(--primary);margin-top:18px}
 .faq dd{margin:6px 0 0 0;color:#444}
 </style>
@@ -350,6 +358,20 @@ footer a{color:var(--accent)}
     </div>
   </div>
 </footer>
+
+<button id="toTop" type="button" aria-label="맨 위로 올라가기" title="맨 위로">↑</button>
+
+<script>
+// --- 맨 위로 버튼 ---
+const toTop = document.getElementById("toTop");
+window.addEventListener("scroll", function () {
+  if (window.scrollY > 400) toTop.classList.add("show");
+  else toTop.classList.remove("show");
+});
+toTop.addEventListener("click", function () {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+</script>
 
 <script>
 // ===== 설정값 — 배포 후 실제 값으로 교체하세요 =====

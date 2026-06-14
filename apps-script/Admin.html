@@ -1,18 +1,15 @@
 <!DOCTYPE html>
-<!-- 2026 IOIA 심화과정 관리자 페이지 — 비밀번호 인증 후 회차별 현황·참가자 리스트·입금확인 처리 -->
+<!-- 2026 IOIA 심화과정 관리자 페이지 — Apps Script(HtmlService)로만 제공되는 비공개 페이지. google.script.run으로 서버 호출 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="robots" content="noindex,nofollow,noarchive" />
-<title>IOIA 심화과정 · 관리자</title>
+<base target="_top" />
 <style>
   :root{ --primary:#800000; --secondary:#9fa0a0; --accent:#ffab40; --ink:#222; --soft:#faf6f6; --line:#e7dede; }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:var(--ink);background:var(--soft);line-height:1.5}
   .wrap{max-width:1100px;margin:0 auto;padding:0 18px}
 
-  /* 로그인 */
   .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#800000,#3a0000)}
   .gate .box{background:#fff;border-radius:14px;padding:34px 34px 28px;width:min(92vw,380px);text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.3)}
   .gate h1{font-size:18px;color:var(--primary);margin-bottom:4px}
@@ -23,15 +20,12 @@
   .gate button:hover{background:#6a0000}
   .gate .err{color:#c0392b;font-size:12.5px;margin-top:10px;min-height:16px}
 
-  /* 대시보드 */
   .app{display:none;padding:26px 0 60px}
   .topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:22px}
   .topbar h1{font-size:20px;color:var(--primary)}
   .topbar .tools{display:flex;gap:8px}
   .btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit}
   .btn:hover{border-color:var(--primary);color:var(--primary)}
-  .btn.solid{background:var(--primary);color:#fff;border-color:var(--primary)}
-  .btn.solid:hover{background:#6a0000;color:#fff}
 
   h2.sec{font-size:15px;color:var(--primary);margin:26px 0 10px}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
@@ -58,7 +52,6 @@
 </head>
 <body>
 
-<!-- 로그인 화면 -->
 <div class="gate" id="gate">
   <form class="box" id="loginForm" autocomplete="off">
     <h1>IOIA 심화과정 관리자</h1>
@@ -69,7 +62,6 @@
   </form>
 </div>
 
-<!-- 대시보드 -->
 <div class="app" id="app">
   <div class="wrap">
     <div class="topbar">
@@ -104,43 +96,35 @@
 </div>
 
 <script>
-// ===== 설정 — index.html과 동일한 Apps Script 배포 URL로 교체 =====
-const API_URL = "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_ID/exec";
-// ================================================================
-
 let PW = "";
 let DATA = { summary: [], list: [] };
 let FILTER = "전체";
 
-async function api(payload) {
-  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-  return res.json();
+// google.script.run 을 Promise 로 감싸 호출
+function run(fn, args) {
+  args = args || [];
+  return new Promise(function (resolve, reject) {
+    var runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+    runner[fn].apply(runner, args);
+  });
 }
 
-// --- 로그인 ---
-document.getElementById("loginForm").addEventListener("submit", async function (e) {
+document.getElementById("loginForm").addEventListener("submit", function (e) {
   e.preventDefault();
-  const errEl = document.getElementById("loginErr");
-  const btn = document.getElementById("loginBtn");
+  var errEl = document.getElementById("loginErr");
+  var btn = document.getElementById("loginBtn");
   PW = document.getElementById("pw").value;
   if (!PW) { errEl.textContent = "비밀번호를 입력하세요."; return; }
-  if (API_URL.includes("REPLACE_WITH")) { errEl.textContent = "API_URL이 아직 설정되지 않았습니다."; return; }
   btn.disabled = true; btn.textContent = "확인 중…"; errEl.textContent = "";
-  try {
-    const j = await api({ action: "list", pw: PW });
-    if (j.ok) {
-      sessionStorage.setItem("ioia_pw", PW);
-      enterApp(j);
-    } else if (j.error === "auth") {
-      errEl.textContent = "비밀번호가 올바르지 않습니다.";
-    } else {
-      errEl.textContent = "오류: " + (j.error || "알 수 없음");
-    }
-  } catch (err) {
+  run("adminList", [PW]).then(function (j) {
+    if (j && j.ok) { enterApp(j); }
+    else if (j && j.error === "auth") { errEl.textContent = "비밀번호가 올바르지 않습니다."; }
+    else { errEl.textContent = "오류: " + ((j && j.error) || "알 수 없음"); }
+  }).catch(function () {
     errEl.textContent = "서버에 연결할 수 없습니다.";
-  } finally {
+  }).then(function () {
     btn.disabled = false; btn.textContent = "로그인";
-  }
+  });
 });
 
 function enterApp(j) {
@@ -149,58 +133,57 @@ function enterApp(j) {
   render(j);
 }
 
-async function reload() {
-  const j = await api({ action: "list", pw: PW });
-  if (j.ok) render(j);
-  else if (j.error === "auth") logout();
+function reload() {
+  run("adminList", [PW]).then(function (j) {
+    if (j && j.ok) render(j);
+    else if (j && j.error === "auth") logout();
+  });
 }
 
 function render(j) {
   DATA = j;
-  // 회차별 현황
-  const sb = document.querySelector("#summaryTbl tbody");
+  var sb = document.querySelector("#summaryTbl tbody");
   sb.innerHTML = "";
   j.summary.forEach(function (s) {
-    const tr = document.createElement("tr");
-    const remain = s.잔여 === 0 ? '<span class="full">0 (마감)</span>' : s.잔여;
+    var tr = document.createElement("tr");
+    var remain = s.잔여 === 0 ? '<span class="full">0 (마감)</span>' : s.잔여;
     tr.innerHTML = "<td>" + s.회차 + "</td><td class='num'>" + s.정원 + "</td><td class='num'>"
       + s.입금확인 + "</td><td class='num'>" + s.미입금 + "</td><td class='num'>" + s.대기
       + "</td><td class='num'>" + remain + "</td>";
     sb.appendChild(tr);
   });
-  // 필터 버튼
-  const fb = document.getElementById("filterbar");
-  const sessions = ["전체"].concat(j.summary.map(function (s) { return s.회차; }));
+  var fb = document.getElementById("filterbar");
+  var sessions = ["전체"].concat(j.summary.map(function (s) { return s.회차; }));
   fb.innerHTML = "";
   sessions.forEach(function (name) {
-    const b = document.createElement("button");
+    var b = document.createElement("button");
     b.textContent = name;
     if (name === FILTER) b.className = "on";
-    b.onclick = function () { FILTER = name; render(DATA); };
+    b.addEventListener("click", function () { FILTER = name; render(DATA); });
     fb.appendChild(b);
   });
   renderList();
 }
 
 function renderList() {
-  const tb = document.querySelector("#listTbl tbody");
-  const empty = document.getElementById("listEmpty");
+  var tb = document.querySelector("#listTbl tbody");
+  var empty = document.getElementById("listEmpty");
   tb.innerHTML = "";
-  const rows = DATA.list.filter(function (x) { return FILTER === "전체" || x.신청회차 === FILTER; });
+  var rows = DATA.list.filter(function (x) { return FILTER === "전체" || x.신청회차 === FILTER; });
   if (rows.length === 0) { empty.style.display = "block"; return; }
   empty.style.display = "none";
   rows.forEach(function (x) {
-    const tr = document.createElement("tr");
-    let pill, action;
+    var tr = document.createElement("tr");
+    var pill, action;
     if (x.상태 === "입금확인") {
       pill = '<span class="pill paid">입금확인</span>';
-      action = '<button class="mini undo" onclick="unconfirm(' + x.row + ')">확인취소</button>';
+      action = '<button class="mini undo" data-act="undo" data-row="' + x.row + '">확인취소</button>';
     } else if (x.상태 === "대기") {
       pill = '<span class="pill wait">대기</span>';
-      action = '<button class="mini confirm" onclick="confirmPay(' + x.row + ')">입금확인</button>';
+      action = '<button class="mini confirm" data-act="confirm" data-row="' + x.row + '">입금확인</button>';
     } else {
       pill = '<span class="pill apply">미입금</span>';
-      action = '<button class="mini confirm" onclick="confirmPay(' + x.row + ')">입금확인</button>';
+      action = '<button class="mini confirm" data-act="confirm" data-row="' + x.row + '">입금확인</button>';
     }
     tr.innerHTML = "<td>" + x.신청일시 + "</td><td>" + esc(x.성명) + "</td><td>" + esc(x.소속)
       + "</td><td>" + esc(x.이메일) + "</td><td>" + esc(x.연락처) + "</td><td>" + x.신청회차
@@ -209,22 +192,30 @@ function renderList() {
   });
 }
 
-async function confirmPay(row) {
+// 입금확인/확인취소 — 이벤트 위임
+document.querySelector("#listTbl tbody").addEventListener("click", function (e) {
+  var btn = e.target.closest("button[data-act]");
+  if (!btn) return;
+  var row = parseInt(btn.getAttribute("data-row"), 10);
+  if (btn.getAttribute("data-act") === "confirm") confirmPay(row);
+  else unconfirm(row);
+});
+
+function confirmPay(row) {
   if (!confirm("입금 확인 처리하고 신청자에게 '접수 완료' 메일을 보냅니다. 계속할까요?")) return;
-  const j = await api({ action: "confirm", pw: PW, row: row });
-  if (j.ok) reload(); else alert("처리 실패: " + (j.error || ""));
+  run("adminConfirm", [PW, row]).then(function (j) {
+    if (j && j.ok) reload(); else alert("처리 실패: " + ((j && j.error) || ""));
+  });
 }
 
-async function unconfirm(row) {
+function unconfirm(row) {
   if (!confirm("입금 확인을 취소하고 '미입금' 상태로 되돌립니다. (메일은 발송되지 않습니다)")) return;
-  const j = await api({ action: "unconfirm", pw: PW, row: row });
-  if (j.ok) reload(); else alert("처리 실패: " + (j.error || ""));
+  run("adminUnconfirm", [PW, row]).then(function (j) {
+    if (j && j.ok) reload(); else alert("처리 실패: " + ((j && j.error) || ""));
+  });
 }
 
-function logout() {
-  sessionStorage.removeItem("ioia_pw");
-  location.reload();
-}
+function logout() { location.reload(); }
 
 function esc(s) {
   return (s == null ? "" : String(s)).replace(/[&<>"]/g, function (c) {
@@ -232,20 +223,8 @@ function esc(s) {
   });
 }
 
-document.getElementById("refreshBtn").onclick = reload;
-document.getElementById("logoutBtn").onclick = logout;
-
-// 세션 동안 비밀번호 유지 (탭 닫으면 해제)
-window.addEventListener("DOMContentLoaded", async function () {
-  const saved = sessionStorage.getItem("ioia_pw");
-  if (saved && !API_URL.includes("REPLACE_WITH")) {
-    PW = saved;
-    try {
-      const j = await api({ action: "list", pw: PW });
-      if (j.ok) enterApp(j);
-    } catch (e) {}
-  }
-});
+document.getElementById("refreshBtn").addEventListener("click", reload);
+document.getElementById("logoutBtn").addEventListener("click", logout);
 </script>
 </body>
 </html>

@@ -1,7 +1,8 @@
 /** 2026 IOIA 심화과정 신청·관리 백엔드 — 구글시트 저장 + 신청자 이메일 발송 + 관리자 API */
 
-// ===== 설정 (배포 전 수정) =====
-const ADMIN_PASSWORD = 'CHANGE_ME_관리자비밀번호'; // 관리자 페이지 접속 비밀번호 (반드시 변경)
+// ===== 설정 =====
+// 관리자 비밀번호는 코드에 적지 않고 Apps Script의 Script Properties(비공개 설정값)에 저장한다.
+// 키: ADMIN_PASSWORD, 값: isidor-ioia-2026  → 프로젝트 설정 > 스크립트 속성에서 입력 (SETUP-backend.md 참조)
 const CAPACITY = 20;                              // 회차당 정원
 const FROM_NAME = '이시도르 지속가능연구소';       // 발신자 표시 이름 (실제 발신 주소는 스크립트 소유 계정 = isidor.yu@gmail.com)
 const CONTACT = 'isidor.yu@gmail.com';
@@ -12,6 +13,15 @@ const SESSIONS = [
   'ISO 17065 — 10월 16일(금)',
 ];
 // ================================
+
+function getAdminPassword_() {
+  return PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD') || '';
+}
+
+function authOk_(pw) {
+  const real = getAdminPassword_();
+  return real && pw === real; // 설정값이 비어 있으면 항상 거부
+}
 
 const HEADERS = ['접수ID', '신청일시', '성명', '소속', '이메일', '연락처', '신청회차', '문의', '상태', '입금확인일시'];
 
@@ -39,10 +49,22 @@ function json_(obj) {
 }
 
 function doGet(e) {
-  const action = (e && e.parameter && e.parameter.action) || 'status';
+  const params = (e && e.parameter) || {};
+  // 비공개 관리자 페이지: 공개 사이트가 아닌 이 배포 URL(?page=admin)로만 제공된다.
+  if (params.page === 'admin') {
+    return HtmlService.createHtmlOutputFromFile('Admin')
+      .setTitle('IOIA 심화과정 관리자')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+  const action = params.action || 'status';
   if (action === 'status') return json_(publicStatus_());
   return json_({ ok: false, error: 'unknown' });
 }
+
+// 관리자 페이지(HtmlService)에서 google.script.run으로 호출하는 API
+function adminList(pw) { return handleList_({ pw: pw }); }
+function adminConfirm(pw, row) { return handleConfirm_({ pw: pw, row: row }); }
+function adminUnconfirm(pw, row) { return handleUnconfirm_({ pw: pw, row: row }); }
 
 function doPost(e) {
   let p = {};
@@ -92,7 +114,7 @@ function handleApply_(p) {
 }
 
 function handleList_(p) {
-  if (p.pw !== ADMIN_PASSWORD) return { ok: false, error: 'auth' };
+  if (!authOk_(p.pw)) return { ok: false, error: 'auth' };
   const rows = getSheet_().getDataRange().getValues();
   const list = [];
   for (let i = 1; i < rows.length; i++) {
@@ -116,7 +138,7 @@ function handleList_(p) {
 }
 
 function handleConfirm_(p) {
-  if (p.pw !== ADMIN_PASSWORD) return { ok: false, error: 'auth' };
+  if (!authOk_(p.pw)) return { ok: false, error: 'auth' };
   const sh = getSheet_();
   const row = parseInt(p.row, 10);
   if (!row || row < 2) return { ok: false, error: 'bad row' };
@@ -128,7 +150,7 @@ function handleConfirm_(p) {
 }
 
 function handleUnconfirm_(p) {
-  if (p.pw !== ADMIN_PASSWORD) return { ok: false, error: 'auth' };
+  if (!authOk_(p.pw)) return { ok: false, error: 'auth' };
   const sh = getSheet_();
   const row = parseInt(p.row, 10);
   if (!row || row < 2) return { ok: false, error: 'bad row' };

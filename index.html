@@ -257,7 +257,7 @@ footer a{color:var(--accent)}
 <section id="apply">
   <div class="wrap">
     <h2 class="sec" style="text-align:center">교육 신청</h2>
-    <p class="sub" style="text-align:center">아래 양식을 작성하신 뒤 안내된 계좌로 입금해 주시면 접수가 확정됩니다.</p>
+    <p class="sub" style="text-align:center">아래 양식을 제출하면 입력하신 이메일로 접수 안내가 발송되며, 수강료 입금이 확인되면 접수가 최종 완료됩니다.</p>
     <form class="form-card" id="applyForm">
       <div class="form-row">
         <label>성명 <span class="req">*</span></label>
@@ -353,12 +353,28 @@ footer a{color:var(--accent)}
 
 <script>
 // ===== 설정값 — 배포 후 실제 값으로 교체하세요 =====
-// Formspree 폼 엔드포인트(무료 가입 후 발급): https://formspree.io
-// 미설정 시 신청 버튼이 이메일 클라이언트(mailto)로 대체 동작합니다.
-const FORMSPREE_ENDPOINT = "https://formspree.io/f/REPLACE_WITH_YOUR_FORM_ID";
+// Google Apps Script 웹앱 배포 URL (apps-script/Code.gs 배포 후 발급되는 .../exec 주소)
+const API_URL = "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_ID/exec";
 const CONTACT_EMAIL = "isidor.yu@gmail.com";
 // 결제: 기업은행 696-010037-04-016 (이시도르지속가능연구소(주)) 무통장입금 안내
 // ====================================================
+
+const API_READY = API_URL && !API_URL.includes("REPLACE_WITH");
+
+// --- 회차별 정원 마감 표시 (공개 현황 조회) ---
+if (API_READY) {
+  fetch(API_URL + "?action=status")
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j || !j.ok) return;
+      document.querySelectorAll('#applyForm select[name="신청회차"] option').forEach(function (opt) {
+        var key = opt.value || opt.textContent;
+        var s = j.sessions[key];
+        if (s && s.full) opt.textContent = opt.textContent + " — 정원 마감(대기 접수)";
+      });
+    })
+    .catch(function () {});
+}
 
 // --- 신청 폼 처리 ---
 const form = document.getElementById("applyForm");
@@ -366,39 +382,35 @@ const statusEl = document.getElementById("formStatus");
 
 form.addEventListener("submit", async function (e) {
   e.preventDefault();
-  const data = new FormData(form);
-  const useFormspree = FORMSPREE_ENDPOINT && !FORMSPREE_ENDPOINT.includes("REPLACE_WITH");
+  const data = Object.fromEntries(new FormData(form).entries());
+  data.action = "apply";
 
-  if (useFormspree) {
-    statusEl.className = "form-status";
-    statusEl.style.display = "block";
-    statusEl.textContent = "전송 중입니다…";
-    try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
-        method: "POST",
-        body: data,
-        headers: { Accept: "application/json" },
-      });
-      if (res.ok) {
-        statusEl.className = "form-status ok";
-        statusEl.textContent = "신청이 접수되었습니다. 확인 후 결제 안내 메일을 보내드리겠습니다.";
-        form.reset();
-      } else {
-        throw new Error("server");
-      }
-    } catch (err) {
-      statusEl.className = "form-status err";
-      statusEl.innerHTML = '전송에 실패했습니다. <a href="mailto:' + CONTACT_EMAIL + '">' + CONTACT_EMAIL + '</a> 로 직접 보내주세요.';
+  statusEl.className = "form-status";
+  statusEl.style.display = "block";
+  statusEl.textContent = "제출 중입니다…";
+
+  if (!API_READY) {
+    statusEl.className = "form-status err";
+    statusEl.innerHTML = '접수 시스템 준비 중입니다. <a href="mailto:' + CONTACT_EMAIL + '">' + CONTACT_EMAIL + '</a> 로 신청해 주세요.';
+    return;
+  }
+
+  try {
+    // Content-Type을 지정하지 않아 text/plain으로 전송 → CORS preflight 회피 (Apps Script 호환)
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(data) });
+    const j = await res.json();
+    if (j.ok) {
+      statusEl.className = "form-status ok";
+      statusEl.textContent = j.waitlist
+        ? "해당 회차는 정원이 마감되어 대기자로 등록되었습니다. 입력하신 이메일로 안내를 보내드렸습니다."
+        : "신청서가 제출되었습니다. 입력하신 이메일로 접수 안내를 보내드렸습니다. 수강료 입금이 확인되면 접수가 최종 완료됩니다.";
+      form.reset();
+    } else {
+      throw new Error(j.error || "server");
     }
-  } else {
-    // mailto 대체 동작
-    const lines = [];
-    for (const [k, v] of data.entries()) lines.push(k + ": " + v);
-    const subject = encodeURIComponent("[IOIA 심화과정] 교육 신청 — " + (data.get("이름") || ""));
-    const body = encodeURIComponent(lines.join("\n"));
-    window.location.href = "mailto:" + CONTACT_EMAIL + "?subject=" + subject + "&body=" + body;
-    statusEl.className = "form-status ok";
-    statusEl.textContent = "메일 작성 창이 열립니다. 내용을 확인 후 전송해 주세요.";
+  } catch (err) {
+    statusEl.className = "form-status err";
+    statusEl.innerHTML = '제출에 실패했습니다. <a href="mailto:' + CONTACT_EMAIL + '">' + CONTACT_EMAIL + '</a> 로 직접 보내주세요.';
   }
 });
 

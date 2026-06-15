@@ -46,18 +46,14 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdro
 @media(max-width:720px){.nav ul{display:none}}
 
 /* 히어로 */
-.hero{background:linear-gradient(135deg,#800000 0%,#5e0000 100%);color:#fff;padding:84px 0 76px;position:relative;overflow:hidden}
-.hero .wrap{position:relative;z-index:2}
-.hero-art{position:absolute;right:-40px;bottom:-30px;width:560px;max-width:52%;opacity:.16;z-index:1;pointer-events:none}
-@media(max-width:820px){.hero-art{display:none}}
+.hero{background:linear-gradient(135deg,#800000 0%,#5e0000 100%);color:#fff;padding:84px 0 76px}
 
 /* 일러스트 배너 */
-.illus-band{background:var(--soft)}
-.illus-row{display:flex;gap:34px;flex-wrap:wrap}
-.illus-fig{flex:1;min-width:260px;text-align:center;margin:0}
-.illus-fig img{width:100%;max-width:420px;height:auto}
-.illus-fig figcaption{margin-top:10px;font-weight:700;color:var(--primary);font-size:1.02rem}
-.illus-fig .cap-sub{display:block;font-weight:500;color:#777;font-size:.86rem;margin-top:3px}
+.illus-row{display:flex;gap:40px;flex-wrap:wrap;margin-top:14px}
+.illus-fig{flex:1;min-width:300px;text-align:center;margin:0;background:#faf6f6;border:1px solid #efe4e4;border-radius:16px;padding:18px 18px 22px}
+.illus-fig img{width:100%;max-width:460px;height:auto;display:block;margin:0 auto}
+.illus-fig figcaption{margin-top:14px;font-weight:800;color:var(--primary);font-size:1.18rem}
+.illus-fig .cap-sub{display:block;font-weight:500;color:#777;font-size:.92rem;margin-top:4px}
 .hero .badge{display:inline-block;background:var(--accent);color:#3a2400;font-weight:700;font-size:.82rem;padding:5px 12px;border-radius:999px;margin-bottom:18px}
 .hero h1{font-size:2.55rem;font-weight:900;line-height:1.25;letter-spacing:-.5px}
 .hero p.lead{margin-top:16px;font-size:1.12rem;opacity:.94;max-width:640px}
@@ -168,7 +164,6 @@ footer a{color:var(--accent)}
 
 <!-- 히어로 -->
 <div class="hero">
-  <img class="hero-art" src="assets/illus-field-white.png" alt="" aria-hidden="true" />
   <div class="wrap">
     <span class="badge">IOIA 공식 수료증 발급 · 온라인 실시간</span>
     <h1>2026 IOIA 심화과정<br />온라인 교육</h1>
@@ -215,13 +210,13 @@ footer a{color:var(--accent)}
         </ul>
       </div>
     </div>
-    <div class="illus-row" style="margin-top:40px">
+    <div class="illus-row" style="margin-top:46px">
       <figure class="illus-fig">
-        <img src="assets/illus-field.png" alt="유기 농산물 현장 추적심사 일러스트" />
+        <img src="assets/people-field.png" alt="유기 농산물 현장 추적심사 — 심사원이 작물을 확인하는 모습" />
         <figcaption>현장 추적심사<span class="cap-sub">매스밸런스 · 농산물·축산물·가공 단계 추적</span></figcaption>
       </figure>
       <figure class="illus-fig">
-        <img src="assets/illus-facility.png" alt="인증기관 시설·시스템 심사 일러스트" />
+        <img src="assets/people-facility.png" alt="인증기관 시설·시스템 심사 — 심사원이 시설을 점검하는 모습" />
         <figcaption>인증기관 시스템 심사<span class="cap-sub">ISO 17065 · 인증기관 운영체계 정비</span></figcaption>
       </figure>
     </div>

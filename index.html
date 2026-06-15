@@ -85,6 +85,16 @@ tbody tr:hover{background:var(--soft)}
 .info .lbl{color:var(--secondary);font-size:.9rem;margin-top:6px}
 .callout{border-left:4px solid var(--accent);background:#fffaf3;padding:16px 20px;border-radius:8px;margin-top:24px;font-size:.96rem}
 
+/* 강사 소개 */
+.trainer-title{font-size:1.15rem;color:var(--primary);font-weight:800;margin:40px 0 16px}
+.trainer-card{display:flex;align-items:center;gap:26px;border:1px solid var(--line);border-radius:14px;padding:24px 28px;background:var(--soft)}
+.trainer-photo{width:120px;height:120px;border-radius:50%;flex:none;object-fit:cover;border:3px solid #fff;box-shadow:0 3px 12px rgba(128,0,0,.12)}
+.trainer-name{font-size:1.3rem;font-weight:800;color:var(--ink)}
+.trainer-name span{font-size:.9rem;font-weight:500;color:var(--secondary);margin-left:6px}
+.trainer-role{color:var(--primary);margin-top:6px;font-size:.98rem}
+.trainer-desc{color:#444;margin-top:10px;font-size:.94rem;line-height:1.7}
+@media(max-width:720px){.trainer-card{flex-direction:column;text-align:center}}
+
 /* 폼 */
 #apply{background:var(--soft)}
 .form-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:32px;max-width:640px;margin:0 auto}
@@ -250,6 +260,16 @@ footer a{color:var(--accent)}
     <div class="callout">
       <strong>IOIA 공식 수료증.</strong> 시험(객관식·단답형 10~15문제)에서 만점의 80% 이상을 획득한 교육생에게 IOIA 명의 수료증을 발급하여 심사원 자격 유지·갱신에 활용할 수 있습니다.
     </div>
+
+    <h3 class="trainer-title">강사 소개</h3>
+    <div class="trainer-card">
+      <img class="trainer-photo" src="assets/trainer.png" alt="강사 유병덕" />
+      <div class="trainer-body">
+        <div class="trainer-name">유병덕 <span>Yu Byeong Deok</span></div>
+        <p class="trainer-role"><strong>이시도르 지속가능연구소 소장 · 2008년부터 IOIA Lead Trainer</strong></p>
+        <p class="trainer-desc">국제유기심사원협회(IOIA) Lead Trainer로서 2008년부터 전 세계 유기 인증심사원을 양성해 왔으며, IOIA APC(인정·전문윤리) 위원으로 활동하고 있습니다. 매스밸런스 추적심사와 ISO/IEC 17065 인증기관 인정 분야의 국제 심사 실무 경험을 바탕으로 교육을 진행합니다.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -376,7 +396,7 @@ footer a{color:var(--accent)}
     </div>
     <div style="text-align:right;opacity:.8">
       <p>2026 IOIA 심화과정 온라인 교육</p>
-      <p>강사 유병덕 (IOIA APC Member, Lead Trainer)</p>
+      <p>강사 유병덕 (2008년부터 IOIA Lead Trainer · IOIA APC Member)</p>
       <p style="margin-top:8px;font-size:.82rem">© 2026 Isidor Sustainability Research Institute</p>
     </div>
   </div>

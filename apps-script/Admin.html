@@ -43,6 +43,8 @@
   .mini.confirm:hover{background:#166335}
   .mini.undo{background:#eee;color:#555}
   .mini.undo:hover{background:#e0e0e0}
+  .mini.del{background:#fff;color:#b03030;border:1px solid #e7b3b3;margin-left:5px}
+  .mini.del:hover{background:#fdecec}
   .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
   .filterbar button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit}
   .filterbar button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -185,6 +187,7 @@ function renderList() {
       pill = '<span class="pill apply">미입금</span>';
       action = '<button class="mini confirm" data-act="confirm" data-row="' + x.row + '">입금확인</button>';
     }
+    action += '<button class="mini del" data-act="delete" data-id="' + esc(x.id) + '" data-name="' + esc(x.성명) + '">삭제</button>';
     tr.innerHTML = "<td>" + x.신청일시 + "</td><td>" + esc(x.성명) + "</td><td>" + esc(x.소속)
       + "</td><td>" + esc(x.이메일) + "</td><td>" + esc(x.연락처) + "</td><td>" + x.신청회차
       + "</td><td>" + pill + "</td><td>" + action + "</td>";
@@ -196,10 +199,19 @@ function renderList() {
 document.querySelector("#listTbl tbody").addEventListener("click", function (e) {
   var btn = e.target.closest("button[data-act]");
   if (!btn) return;
+  var act = btn.getAttribute("data-act");
+  if (act === "delete") { confirmDelete(btn.getAttribute("data-id"), btn.getAttribute("data-name")); return; }
   var row = parseInt(btn.getAttribute("data-row"), 10);
-  if (btn.getAttribute("data-act") === "confirm") confirmPay(row);
+  if (act === "confirm") confirmPay(row);
   else unconfirm(row);
 });
+
+function confirmDelete(id, name) {
+  if (!confirm("'" + name + "' 신청건을 완전히 삭제합니다.\n삭제하면 되돌릴 수 없습니다. 계속할까요?")) return;
+  run("adminDelete", [PW, id]).then(function (j) {
+    if (j && j.ok) reload(); else alert("삭제 실패: " + ((j && j.error) || ""));
+  });
+}
 
 function confirmPay(row) {
   if (!confirm("입금 확인 처리하고 신청자에게 '접수 완료' 메일을 보냅니다. 계속할까요?")) return;

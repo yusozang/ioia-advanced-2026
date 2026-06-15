@@ -65,6 +65,7 @@ function doGet(e) {
 function adminList(pw) { return handleList_({ pw: pw }); }
 function adminConfirm(pw, row) { return handleConfirm_({ pw: pw, row: row }); }
 function adminUnconfirm(pw, row) { return handleUnconfirm_({ pw: pw, row: row }); }
+function adminDelete(pw, id) { return handleDelete_({ pw: pw, id: id }); }
 
 function doPost(e) {
   let p = {};
@@ -73,6 +74,7 @@ function doPost(e) {
   if (p.action === 'list') return json_(handleList_(p));
   if (p.action === 'confirm') return json_(handleConfirm_(p));
   if (p.action === 'unconfirm') return json_(handleUnconfirm_(p));
+  if (p.action === 'delete') return json_(handleDelete_(p));
   return json_({ ok: false, error: 'unknown action' });
 }
 
@@ -157,6 +159,21 @@ function handleUnconfirm_(p) {
   sh.getRange(row, 9).setValue('신청');
   sh.getRange(row, 10).setValue('');
   return { ok: true };
+}
+
+function handleDelete_(p) {
+  if (!authOk_(p.pw)) return { ok: false, error: 'auth' };
+  const id = (p.id || '').toString();
+  if (!id) return { ok: false, error: 'bad id' };
+  const sh = getSheet_();
+  const rows = sh.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === id) {  // 접수ID(A열)로 매칭 → 행 번호 이동에 안전
+      sh.deleteRow(i + 1);
+      return { ok: true };
+    }
+  }
+  return { ok: false, error: 'not found' };
 }
 
 function fmt_(d) {

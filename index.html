@@ -359,7 +359,7 @@ footer a{color:var(--accent)}
       <div style="text-align:center;margin:28px 0">
         <a href="https://isidor.kr/20/?idx=3" target="_blank" rel="noopener"
            style="display:inline-block;padding:16px 40px;background:#800000;color:#fff;font-size:1.1rem;font-weight:700;border-radius:10px;text-decoration:none;letter-spacing:-.3px">
-          카드로 결제하기 →
+          수강료 결제하기 →
         </a>
       </div>
       <p class="form-note" style="margin-top:18px;line-height:1.8;text-align:left">
@@ -471,7 +471,7 @@ form.addEventListener("submit", async function (e) {
         ? "해당 회차는 정원이 마감되어 대기자로 등록되었습니다. 입력하신 이메일로 안내를 보내드렸습니다."
         : "신청서가 제출되었습니다. 아래 결제 버튼으로 수강료를 결제하시면 접수가 최종 완료됩니다.";
       if (!j.waitlist) {
-        statusEl.innerHTML += ' <a href="https://isidor.kr/20/?idx=3" target="_blank" style="display:inline-block;margin-top:12px;padding:10px 24px;background:#800000;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">카드로 결제하기 →</a>';
+        statusEl.innerHTML += ' <a href="https://isidor.kr/20/?idx=3" target="_blank" style="display:inline-block;margin-top:12px;padding:10px 24px;background:#800000;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">수강료 결제하기 →</a>';
       }
       form.reset();
     } else {

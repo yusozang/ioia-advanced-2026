@@ -451,6 +451,23 @@ if (API_READY) {
 const form = document.getElementById("applyForm");
 const statusEl = document.getElementById("formStatus");
 
+// --- 연락처 입력 자동 포맷 (010-0000-0000) ---
+(function () {
+  const phoneInput = form.querySelector('input[name="연락처"]');
+  if (!phoneInput) return;
+  function fmtPhone(v) {
+    let d = (v || "").replace(/\D/g, "");
+    if (d.length === 10 && d.charAt(0) === "1") d = "0" + d; // 1058307048 → 01058307048
+    d = d.slice(0, 11);
+    if (d.length < 4) return d;
+    if (d.length < 8) return d.replace(/(\d{3})(\d+)/, "$1-$2");
+    return d.replace(/(\d{3})(\d{4})(\d+)/, "$1-$2-$3");
+  }
+  phoneInput.addEventListener("input", function () {
+    this.value = fmtPhone(this.value);
+  });
+})();
+
 form.addEventListener("submit", async function (e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(form).entries());

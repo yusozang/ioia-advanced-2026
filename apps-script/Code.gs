@@ -99,7 +99,7 @@ function handleApply_(p) {
   const name = (p['이름'] || '').toString().trim();
   const org = (p['소속'] || '').toString().trim();
   const email = (p['이메일'] || '').toString().trim();
-  const phone = (p['연락처'] || '').toString().trim();
+  const phone = formatPhone_(p['연락처'] || '');
   const sess = (p['신청회차'] || '').toString().trim();
   const note = (p['문의'] || '').toString().trim();
   if (!name || !email || !sess) return { ok: false, error: '필수 항목이 누락되었습니다.' };
@@ -123,7 +123,7 @@ function handleList_(p) {
     const r = rows[i];
     list.push({
       row: i + 1, id: r[0], 신청일시: fmt_(r[1]), 성명: r[2], 소속: r[3], 이메일: r[4],
-      연락처: r[5], 신청회차: r[6], 문의: r[7], 상태: r[8], 입금확인일시: fmt_(r[9]),
+      연락처: formatPhone_(r[5]), 신청회차: r[6], 문의: r[7], 상태: r[8], 입금확인일시: fmt_(r[9]),
     });
   }
   const paid = countPaidBySession_();
@@ -180,6 +180,19 @@ function fmt_(d) {
   if (!d) return '';
   if (Object.prototype.toString.call(d) !== '[object Date]') return d.toString();
   return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+}
+
+// 전화번호를 010-0000-0000 형식으로 정규화한다. 숫자만 추출하고, 엑셀/숫자 변환으로
+// 앞자리 0이 떨어진 휴대폰 번호(예: 1058307048)는 0을 복원해 011 형식으로 맞춘다.
+function formatPhone_(raw) {
+  var d = String(raw == null ? '' : raw).replace(/\D/g, '');
+  if (!d) return '';
+  if (d.length === 10 && d.charAt(0) === '1') d = '0' + d;                 // 1058307048 → 01058307048
+  if (d.length === 11) return d.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3'); // 휴대폰 010-0000-0000
+  if (d.length === 10 && d.indexOf('02') === 0) return d.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3'); // 서울 02-0000-0000
+  if (d.length === 10) return d.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'); // 지역번호 000-000-0000
+  if (d.length === 9 && d.indexOf('02') === 0) return d.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3'); // 서울 02-000-0000
+  return d; // 형식을 알 수 없으면 숫자만 반환
 }
 
 // ===== 이메일 (발신 주소 = 스크립트 소유 계정) =====

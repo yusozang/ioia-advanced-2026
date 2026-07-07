@@ -28,7 +28,7 @@ const RECEIPT_ISSUER = '이시도르지속가능연구소 주식회사';
 const RECEIPT_BIZ = '사업자등록번호: 113-86-79001 &nbsp;·&nbsp; 충북 충주시 주덕읍 신덕로 1358 &nbsp;·&nbsp; T 043-845-9792 &nbsp;·&nbsp; www.isidor.kr';
 const RECEIPT_CONTACT = 'yun@isidor.kr';
 
-const HEADERS = ['접수ID', '신청일시', '성명', '소속', '이메일', '연락처', '신청회차', '문의', '상태', '입금확인일시', '결제방법', '결제일시', '영수증발행일시'];
+const HEADERS = ['접수ID', '신청일시', '성명', '소속', '이메일', '연락처', '신청회차', '문의', '상태', '입금확인일시', '결제방법', '결제일시', '영수증발행일시', '영어성명'];
 
 function getSheet_() {
   const props = PropertiesService.getScriptProperties();
@@ -46,9 +46,9 @@ function getSheet_() {
     sh.appendRow(HEADERS);
     sh.setFrozenRows(1);
   }
-  // 구버전 시트(10열)에 영수증 관련 헤더(11~13열)를 보충한다
-  if (sh.getRange(1, 11).getValue() !== HEADERS[10]) {
-    sh.getRange(1, 11, 1, 3).setValues([[HEADERS[10], HEADERS[11], HEADERS[12]]]);
+  // 구버전 시트에 새 헤더(11~14열: 결제방법·결제일시·영수증발행일시·영어성명)를 보충한다
+  if (sh.getRange(1, 14).getValue() !== HEADERS[13]) {
+    sh.getRange(1, 11, 1, 4).setValues([[HEADERS[10], HEADERS[11], HEADERS[12], HEADERS[13]]]);
   }
   return sh;
 }
@@ -110,6 +110,7 @@ function publicStatus_() {
 
 function handleApply_(p) {
   const name = (p['이름'] || '').toString().trim();
+  const nameEn = (p['영어이름'] || '').toString().trim();
   const org = (p['소속'] || '').toString().trim();
   const email = (p['이메일'] || '').toString().trim();
   const phone = formatPhone_(p['연락처'] || '');
@@ -123,7 +124,7 @@ function handleApply_(p) {
   const isWaitlist = remaining <= 0;
   const status = isWaitlist ? '대기' : '신청';
   const id = 'A' + new Date().getTime();
-  getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, status, '', '', '', '']);
+  getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, status, '', '', '', '', nameEn]);
   try { sendApplyEmail_(email, name, sess, isWaitlist, remaining); } catch (e) { /* 메일 실패해도 접수는 유지 */ }
   return { ok: true, waitlist: isWaitlist, remaining: remaining };
 }
@@ -137,7 +138,7 @@ function handleList_(p) {
     list.push({
       row: i + 1, id: r[0], 신청일시: fmt_(r[1]), 성명: r[2], 소속: r[3], 이메일: r[4],
       연락처: formatPhone_(r[5]), 신청회차: r[6], 문의: r[7], 상태: r[8], 입금확인일시: fmt_(r[9]),
-      결제방법: r[10] || '', 결제일시: fmt_(r[11]), 영수증발행일시: fmt_(r[12]),
+      결제방법: r[10] || '', 결제일시: fmt_(r[11]), 영수증발행일시: fmt_(r[12]), 영어성명: r[13] || '',
     });
   }
   const paid = countPaidBySession_();

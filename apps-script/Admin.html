@@ -49,6 +49,7 @@
   .mini.mail:hover{background:#faf0f0}
   .mini:disabled{opacity:.55;cursor:default}
   .issued{font-size:11px;color:#1e7e44;font-weight:700;margin-bottom:4px;white-space:nowrap}
+  .en{font-size:11px;color:#888}
 
   .modalbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10;align-items:center;justify-content:center}
   .modalbg.open{display:flex}
@@ -237,7 +238,8 @@ function renderList() {
       receipt = '<span style="color:#bbb">—</span>';
     }
     action += '<button class="mini del" data-act="delete" data-id="' + esc(x.id) + '" data-name="' + esc(x.성명) + '">삭제</button>';
-    tr.innerHTML = "<td>" + x.신청일시 + "</td><td>" + esc(x.성명) + "</td><td>" + esc(x.소속)
+    var nameCell = esc(x.성명) + (x.영어성명 ? '<div class="en">' + esc(x.영어성명) + '</div>' : '');
+    tr.innerHTML = "<td>" + x.신청일시 + "</td><td>" + nameCell + "</td><td>" + esc(x.소속)
       + "</td><td>" + esc(x.이메일) + "</td><td>" + esc(x.연락처) + "</td><td>" + x.신청회차
       + "</td><td>" + pill + "</td><td>" + action + "</td><td>" + receipt + "</td>";
     tb.appendChild(tr);

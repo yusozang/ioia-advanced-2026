@@ -110,7 +110,7 @@ function publicStatus_() {
 
 function handleApply_(p) {
   const name = (p['이름'] || '').toString().trim();
-  const nameEn = (p['영어이름'] || '').toString().trim();
+  const nameEn = (p['영어이름'] || '').toString().trim().toUpperCase(); // 소문자로 적어도 대문자로 저장
   const org = (p['소속'] || '').toString().trim();
   const email = (p['이메일'] || '').toString().trim();
   const phone = formatPhone_(p['연락처'] || '');

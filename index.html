@@ -301,7 +301,7 @@ footer a{color:var(--accent)}
       </div>
       <div class="form-row">
         <label>영어 성명 <span class="req">*</span></label>
-        <input type="text" name="영어이름" required placeholder="HONG GIL DONG" />
+        <input type="text" name="영어이름" required placeholder="HONG GIL DONG" style="text-transform:uppercase" />
         <div class="form-note">IOIA 수료증에 표기됩니다. 여권 영문 표기와 동일하게 적어주세요.</div>
       </div>
       <div class="form-row">
@@ -474,6 +474,17 @@ const statusEl = document.getElementById("formStatus");
   }
   phoneInput.addEventListener("input", function () {
     this.value = fmtPhone(this.value);
+  });
+})();
+
+// --- 영어 성명 대문자 자동 변환 ---
+(function () {
+  const enInput = form.querySelector('input[name="영어이름"]');
+  if (!enInput) return;
+  enInput.addEventListener("input", function () {
+    const pos = this.selectionStart;
+    this.value = this.value.toUpperCase();
+    this.setSelectionRange(pos, pos);
   });
 })();
 

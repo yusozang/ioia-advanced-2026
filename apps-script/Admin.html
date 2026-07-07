@@ -65,6 +65,13 @@
   .modal .err{color:#c0392b;font-size:12px;margin-top:8px;min-height:15px}
   .mini.del{background:#fff;color:#b03030;border:1px solid #e7b3b3;margin-left:5px}
   .mini.del:hover{background:#fdecec}
+  .listhead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .listhead h2.sec{margin-bottom:0}
+  .search{position:relative}
+  .search input{width:230px;padding:8px 30px 8px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-family:inherit;outline:none;background:#fff}
+  .search input:focus{border-color:var(--primary)}
+  .search .clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;color:#999;font-size:14px;cursor:pointer;display:none;padding:2px}
+  .search.has .clear{display:block}
   .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
   .filterbar button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit}
   .filterbar button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -104,7 +111,13 @@
     </table>
     <p class="note">‘입금확인’ 수가 정원(20명)에 도달하면 잔여석이 0이 되고, 이후 신청자는 자동으로 대기자로 등록됩니다.</p>
 
-    <h2 class="sec">참가자 리스트</h2>
+    <div class="listhead">
+      <h2 class="sec">참가자 리스트</h2>
+      <div class="search" id="searchWrap">
+        <input type="text" id="searchBox" placeholder="이름 검색 (국문·영문)" />
+        <button type="button" class="clear" id="searchClear" aria-label="검색어 지우기">✕</button>
+      </div>
+    </div>
     <div class="filterbar" id="filterbar"></div>
     <table id="listTbl">
       <thead><tr>
@@ -142,6 +155,7 @@
 let PW = "";
 let DATA = { summary: [], list: [] };
 let FILTER = "전체";
+let SEARCH = "";
 
 // google.script.run 을 Promise 로 감싸 호출
 function run(fn, args) {
@@ -212,8 +226,13 @@ function renderList() {
   var tb = document.querySelector("#listTbl tbody");
   var empty = document.getElementById("listEmpty");
   tb.innerHTML = "";
-  var rows = DATA.list.filter(function (x) { return FILTER === "전체" || x.신청회차 === FILTER; });
-  if (rows.length === 0) { empty.style.display = "block"; return; }
+  var q = SEARCH.trim().toLowerCase();
+  var rows = DATA.list.filter(function (x) {
+    if (FILTER !== "전체" && x.신청회차 !== FILTER) return false;
+    if (!q) return true;
+    return (String(x.성명 || "") + " " + String(x.영어성명 || "")).toLowerCase().indexOf(q) !== -1;
+  });
+  if (rows.length === 0) { empty.style.display = "block"; empty.textContent = q ? "'" + SEARCH.trim() + "' 검색 결과가 없습니다." : "신청자가 없습니다."; return; }
   empty.style.display = "none";
   rows.forEach(function (x) {
     var tr = document.createElement("tr");
@@ -360,6 +379,20 @@ function esc(s) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
   });
 }
+
+// ===== 이름 검색 (입력 즉시 필터) =====
+document.getElementById("searchBox").addEventListener("input", function () {
+  SEARCH = this.value;
+  document.getElementById("searchWrap").classList.toggle("has", !!this.value);
+  renderList();
+});
+document.getElementById("searchClear").addEventListener("click", function () {
+  var box = document.getElementById("searchBox");
+  box.value = ""; SEARCH = "";
+  document.getElementById("searchWrap").classList.remove("has");
+  renderList();
+  box.focus();
+});
 
 document.getElementById("refreshBtn").addEventListener("click", reload);
 document.getElementById("logoutBtn").addEventListener("click", logout);

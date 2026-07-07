@@ -23,7 +23,12 @@ function authOk_(pw) {
   return real && pw === real; // 설정값이 비어 있으면 항상 거부
 }
 
-const HEADERS = ['접수ID', '신청일시', '성명', '소속', '이메일', '연락처', '신청회차', '문의', '상태', '입금확인일시'];
+const PAY_METHODS = ['무통장입금', '신용카드'];       // 영수증 결제 방법 (관리자 페이지 드롭다운과 일치)
+const RECEIPT_ISSUER = '이시도르지속가능연구소 주식회사';
+const RECEIPT_BIZ = '사업자등록번호: 113-86-79001 &nbsp;·&nbsp; 충북 충주시 주덕읍 신덕로 1358 &nbsp;·&nbsp; T 043-845-9792 &nbsp;·&nbsp; www.isidor.kr';
+const RECEIPT_CONTACT = 'yun@isidor.kr';
+
+const HEADERS = ['접수ID', '신청일시', '성명', '소속', '이메일', '연락처', '신청회차', '문의', '상태', '입금확인일시', '결제방법', '결제일시', '영수증발행일시'];
 
 function getSheet_() {
   const props = PropertiesService.getScriptProperties();
@@ -40,6 +45,10 @@ function getSheet_() {
     sh.setName('신청자');
     sh.appendRow(HEADERS);
     sh.setFrozenRows(1);
+  }
+  // 구버전 시트(10열)에 영수증 관련 헤더(11~13열)를 보충한다
+  if (sh.getRange(1, 11).getValue() !== HEADERS[10]) {
+    sh.getRange(1, 11, 1, 3).setValues([[HEADERS[10], HEADERS[11], HEADERS[12]]]);
   }
   return sh;
 }
@@ -66,7 +75,8 @@ function adminList(pw) { return handleList_({ pw: pw }); }
 function adminConfirm(pw, row) { return handleConfirm_({ pw: pw, row: row }); }
 function adminUnconfirm(pw, row) { return handleUnconfirm_({ pw: pw, row: row }); }
 function adminDelete(pw, id) { return handleDelete_({ pw: pw, id: id }); }
-function adminReceipt(pw, row) { return handleReceipt_({ pw: pw, row: row }); }
+function adminIssueReceipt(pw, row, method, date, time) { return handleIssueReceipt_({ pw: pw, row: row, method: method, date: date, time: time }); }
+function adminSendReceipt(pw, row) { return handleSendReceipt_({ pw: pw, row: row }); }
 
 function doPost(e) {
   let p = {};
@@ -76,7 +86,8 @@ function doPost(e) {
   if (p.action === 'confirm') return json_(handleConfirm_(p));
   if (p.action === 'unconfirm') return json_(handleUnconfirm_(p));
   if (p.action === 'delete') return json_(handleDelete_(p));
-  if (p.action === 'receipt') return json_(handleReceipt_(p));
+  if (p.action === 'issueReceipt') return json_(handleIssueReceipt_(p));
+  if (p.action === 'sendReceipt') return json_(handleSendReceipt_(p));
   return json_({ ok: false, error: 'unknown action' });
 }
 
@@ -112,7 +123,7 @@ function handleApply_(p) {
   const isWaitlist = remaining <= 0;
   const status = isWaitlist ? '대기' : '신청';
   const id = 'A' + new Date().getTime();
-  getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, status, '']);
+  getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, status, '', '', '', '']);
   try { sendApplyEmail_(email, name, sess, isWaitlist, remaining); } catch (e) { /* 메일 실패해도 접수는 유지 */ }
   return { ok: true, waitlist: isWaitlist, remaining: remaining };
 }
@@ -126,6 +137,7 @@ function handleList_(p) {
     list.push({
       row: i + 1, id: r[0], 신청일시: fmt_(r[1]), 성명: r[2], 소속: r[3], 이메일: r[4],
       연락처: formatPhone_(r[5]), 신청회차: r[6], 문의: r[7], 상태: r[8], 입금확인일시: fmt_(r[9]),
+      결제방법: r[10] || '', 결제일시: fmt_(r[11]), 영수증발행일시: fmt_(r[12]),
     });
   }
   const paid = countPaidBySession_();
@@ -160,6 +172,7 @@ function handleUnconfirm_(p) {
   if (!row || row < 2) return { ok: false, error: 'bad row' };
   sh.getRange(row, 9).setValue('신청');
   sh.getRange(row, 10).setValue('');
+  sh.getRange(row, 11, 1, 3).setValues([['', '', '']]); // 결제방법·결제일시·영수증발행일시도 초기화
   return { ok: true };
 }
 
@@ -178,14 +191,33 @@ function handleDelete_(p) {
   return { ok: false, error: 'not found' };
 }
 
-// 입금확인된 신청건의 영수증 PDF를 생성해 신청자 이메일로 발송한다.
-function handleReceipt_(p) {
+// 영수증 발행 — 결제방법·결제일시를 기록하고 발행일시를 남긴다. 다시 호출하면 재발행(갱신).
+function handleIssueReceipt_(p) {
   if (!authOk_(p.pw)) return { ok: false, error: 'auth' };
   const sh = getSheet_();
   const row = parseInt(p.row, 10);
   if (!row || row < 2) return { ok: false, error: 'bad row' };
   const r = sh.getRange(row, 1, 1, HEADERS.length).getValues()[0];
   if (r[8] !== '입금확인') return { ok: false, error: '입금확인 상태에서만 영수증을 발행할 수 있습니다.' };
+  const method = (p.method || '').toString();
+  if (PAY_METHODS.indexOf(method) === -1) return { ok: false, error: '결제 방법을 선택하세요.' };
+  const date = (p.date || '').toString().trim();
+  const time = (p.time || '').toString().trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: '결제일을 입력하세요.' };
+  if (!/^\d{1,2}:\d{2}$/.test(time)) return { ok: false, error: '결제 시간을 입력하세요.' };
+  sh.getRange(row, 11, 1, 3).setValues([[method, date + ' ' + time, new Date()]]);
+  return { ok: true };
+}
+
+// 발행된 영수증을 PDF로 만들어 신청자 이메일에 첨부 발송한다.
+function handleSendReceipt_(p) {
+  if (!authOk_(p.pw)) return { ok: false, error: 'auth' };
+  const sh = getSheet_();
+  const row = parseInt(p.row, 10);
+  if (!row || row < 2) return { ok: false, error: 'bad row' };
+  const r = sh.getRange(row, 1, 1, HEADERS.length).getValues()[0];
+  if (r[8] !== '입금확인') return { ok: false, error: '입금확인 상태에서만 영수증을 보낼 수 있습니다.' };
+  if (!r[12]) return { ok: false, error: '영수증을 먼저 발행하세요.' };
   const email = (r[4] || '').toString().trim();
   if (!email) return { ok: false, error: '신청자 이메일이 없습니다.' };
   const pdf = Utilities.newBlob(receiptHtml_(r), MimeType.HTML, 'receipt.html')
@@ -205,10 +237,10 @@ function receiptEmailBody_(name, sess) {
     + '문의: ' + CONTACT + '\n이시도르 지속가능연구소';
 }
 
-// 로고를 GitHub Pages에서 받아 data URI로 인라인 (실패 시 빈 문자열 → 텍스트 헤더로 폴백)
+// 이시도르교육 로고를 GitHub Pages에서 받아 data URI로 인라인 (실패 시 빈 문자열 → 텍스트 헤더로 폴백)
 function logoDataUri_() {
   try {
-    const res = UrlFetchApp.fetch('https://yusozang.github.io/ioia-advanced-2026/assets/isidor-logo.png', { muteHttpExceptions: true });
+    const res = UrlFetchApp.fetch('https://yusozang.github.io/ioia-advanced-2026/assets/isidor-course-logo.png', { muteHttpExceptions: true });
     if (res.getResponseCode() !== 200) return '';
     return 'data:image/png;base64,' + Utilities.base64Encode(res.getBlob().getBytes());
   } catch (e) { return ''; }
@@ -220,44 +252,52 @@ function escHtml_(s) {
   });
 }
 
+// 영수증 HTML — 2026-07-07 확정 디자인 (이시도르교육 로고 + 결제방법/결제일시 + 영수인·사업자 정보)
 function receiptHtml_(r) {
   const id = escHtml_(r[0]);
   const name = escHtml_(r[2]);
   const org = escHtml_(r[3]);
   const sess = escHtml_(r[6]);
-  const paidAt = fmt_(r[9]);
-  const issued = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  const method = escHtml_(r[10]);
+  const paidAt = escHtml_(fmt_(r[11]));
+  const issuedD = Object.prototype.toString.call(r[12]) === '[object Date]' ? r[12] : new Date();
+  const issued = Utilities.formatDate(issuedD, 'Asia/Seoul', 'yyyy-MM-dd');
+  const issuedKor = Utilities.formatDate(issuedD, 'Asia/Seoul', 'yyyy년 M월 d일');
   const logo = logoDataUri_();
   const header = logo
-    ? '<img src="' + logo + '" style="height:34px" alt="이시도르 지속가능연구소" />'
-    : '<div style="font-size:15px;font-weight:700;color:#800000">이시도르 지속가능연구소</div>';
+    ? '<img src="' + logo + '" style="height:44px" alt="이시도르교육" />'
+    : '<div style="font-size:16px;font-weight:700;color:#800000">이시도르교육</div>';
   return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><style>'
     + 'body{font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;color:#222;margin:40px 48px;font-size:12px;line-height:1.6}'
-    + 'h1{font-size:26px;color:#800000;text-align:center;letter-spacing:14px;margin:28px 0 6px;padding-left:14px}'
-    + '.no{text-align:center;color:#888;font-size:11px;margin-bottom:26px}'
-    + 'table{width:100%;border-collapse:collapse;margin:14px 0}'
-    + 'th,td{border-bottom:0.5px solid #9fa0a0;padding:8px 10px;text-align:left;font-size:12px}'
-    + 'th{width:130px;color:#800000;font-weight:700}'
-    + '.amt td{font-size:15px;font-weight:700}'
-    + '.foot{margin-top:34px;text-align:center}'
-    + '.foot .stmt{font-size:13px;margin-bottom:26px}'
-    + '.foot .co{font-size:14px;font-weight:700;color:#800000}'
-    + '.foot .contact{font-size:11px;color:#888;margin-top:4px}'
+    + 'h1{font-size:30px;color:#800000;text-align:center;letter-spacing:18px;padding-left:18px;margin:52px 0 10px;font-weight:700}'
+    + '.no{text-align:center;color:#888;font-size:11px;margin-bottom:46px}'
+    + 'table{width:100%;border-collapse:collapse;margin:0 0 40px}'
+    + 'th,td{border-bottom:0.5px solid #9fa0a0;padding:10px 12px;text-align:left;font-size:12.5px;vertical-align:top}'
+    + 'th{width:120px;color:#800000;font-weight:700}'
+    + '.amt td{font-size:16px;font-weight:700}'
+    + '.stmt{text-align:center;font-size:14px;margin:36px 0 56px}'
+    + '.issuer{text-align:center}'
+    + '.issuer .date{font-size:12.5px;margin-bottom:28px}'
+    + '.issuer .co{font-size:16px;font-weight:700}'
+    + '.issuer .biz{font-size:11px;color:#888;margin-top:11px}'
+    + '.issuer .contact{font-size:11px;color:#888;margin-top:4px}'
     + '</style></head><body>'
     + '<div style="text-align:right">' + header + '</div>'
     + '<h1>영 수 증</h1>'
-    + '<div class="no">영수증 번호: ' + id + ' · 발행일: ' + issued + '</div>'
+    + '<div class="no">영수증 번호: ' + id + ' &nbsp;·&nbsp; 발행일: ' + issued + '</div>'
     + '<table>'
     + '<tr><th>받는 분</th><td>' + name + (org ? ' (' + org + ')' : '') + '</td></tr>'
     + '<tr><th>내역</th><td>2026 IOIA 심화과정 수강료 — ' + sess + '</td></tr>'
     + '<tr class="amt"><th>금액</th><td>500,000원 (오십만원)</td></tr>'
-    + '<tr><th>결제 방법</th><td>무통장입금 — 기업은행(IBK) 696-010037-04-016</td></tr>'
-    + '<tr><th>입금 확인일</th><td>' + escHtml_(paidAt) + '</td></tr>'
+    + '<tr><th>결제 방법</th><td>' + method + '</td></tr>'
+    + '<tr><th>결제 일시</th><td>' + paidAt + '</td></tr>'
     + '</table>'
-    + '<div class="foot">'
     + '<div class="stmt">위 금액을 정히 영수하였습니다.</div>'
-    + '<div class="co">이시도르지속가능연구소(주)</div>'
-    + '<div class="contact">문의: ' + CONTACT + '</div>'
+    + '<div class="issuer">'
+    + '<div class="date">' + issuedKor + '</div>'
+    + '<div class="co">영수인: ' + RECEIPT_ISSUER + '</div>'
+    + '<div class="biz">' + RECEIPT_BIZ + '</div>'
+    + '<div class="contact">문의: ' + RECEIPT_CONTACT + '</div>'
     + '</div>'
     + '</body></html>';
 }

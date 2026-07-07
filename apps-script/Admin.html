@@ -43,9 +43,25 @@
   .mini.confirm:hover{background:#166335}
   .mini.undo{background:#eee;color:#555}
   .mini.undo:hover{background:#e0e0e0}
-  .mini.receipt{background:var(--primary);color:#fff;margin-right:5px}
+  .mini.receipt{background:var(--primary);color:#fff}
   .mini.receipt:hover{background:#6a0000}
-  .mini.receipt:disabled{background:#c9a3a3;cursor:default}
+  .mini.mail{background:#fff;color:var(--primary);border:1px solid var(--primary);margin-left:5px}
+  .mini.mail:hover{background:#faf0f0}
+  .mini:disabled{opacity:.55;cursor:default}
+  .issued{font-size:11px;color:#1e7e44;font-weight:700;margin-bottom:4px;white-space:nowrap}
+
+  .modalbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10;align-items:center;justify-content:center}
+  .modalbg.open{display:flex}
+  .modal{background:#fff;border-radius:12px;padding:24px 26px 20px;width:min(92vw,360px);box-shadow:0 14px 40px rgba(0,0,0,.3)}
+  .modal h3{font-size:16px;color:var(--primary);margin-bottom:4px}
+  .modal .who{font-size:12.5px;color:#888;margin-bottom:16px}
+  .modal label{display:block;font-size:12px;font-weight:700;color:#555;margin:10px 0 4px}
+  .modal select,.modal input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;font-size:14px;font-family:inherit;outline:none;background:#fff}
+  .modal select:focus,.modal input:focus{border-color:var(--primary)}
+  .modal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+  .modal .acts .primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .modal .acts .primary:hover{background:#6a0000;color:#fff}
+  .modal .err{color:#c0392b;font-size:12px;margin-top:8px;min-height:15px}
   .mini.del{background:#fff;color:#b03030;border:1px solid #e7b3b3;margin-left:5px}
   .mini.del:hover{background:#fdecec}
   .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
@@ -92,11 +108,32 @@
     <table id="listTbl">
       <thead><tr>
         <th>신청일시</th><th>성명</th><th>소속</th><th>이메일</th><th>연락처</th>
-        <th>회차</th><th>상태</th><th>처리</th>
+        <th>회차</th><th>상태</th><th>처리</th><th>영수증</th>
       </tr></thead>
       <tbody></tbody>
     </table>
     <div class="empty" id="listEmpty" style="display:none">신청자가 없습니다.</div>
+  </div>
+</div>
+
+<div class="modalbg" id="rcptModal">
+  <div class="modal">
+    <h3>영수증 발행</h3>
+    <div class="who" id="rcptWho"></div>
+    <label for="rcptMethod">결제 방법</label>
+    <select id="rcptMethod">
+      <option value="무통장입금">무통장입금</option>
+      <option value="신용카드">신용카드</option>
+    </select>
+    <label for="rcptDate">결제일</label>
+    <input type="date" id="rcptDate" />
+    <label for="rcptTime">결제 시간</label>
+    <input type="time" id="rcptTime" />
+    <div class="acts">
+      <button class="btn" type="button" id="rcptCancel">취소</button>
+      <button class="btn primary" type="button" id="rcptIssue">발행</button>
+    </div>
+    <div class="err" id="rcptErr"></div>
   </div>
 </div>
 
@@ -179,22 +216,30 @@ function renderList() {
   empty.style.display = "none";
   rows.forEach(function (x) {
     var tr = document.createElement("tr");
-    var pill, action;
+    var pill, action, receipt;
     if (x.상태 === "입금확인") {
       pill = '<span class="pill paid">입금확인</span>';
-      action = '<button class="mini receipt" data-act="receipt" data-row="' + x.row + '">영수증출력</button>'
-             + '<button class="mini undo" data-act="undo" data-row="' + x.row + '">확인취소</button>';
+      action = '<button class="mini undo" data-act="undo" data-row="' + x.row + '">확인취소</button>';
+      if (x.영수증발행일시) {
+        receipt = '<div class="issued">발행됨 · ' + esc(x.영수증발행일시) + '</div>'
+                + '<button class="mini receipt" data-act="issue" data-row="' + x.row + '">재발행</button>'
+                + '<button class="mini mail" data-act="mail" data-row="' + x.row + '">이메일발송</button>';
+      } else {
+        receipt = '<button class="mini receipt" data-act="issue" data-row="' + x.row + '">영수증발행</button>';
+      }
     } else if (x.상태 === "대기") {
       pill = '<span class="pill wait">대기</span>';
       action = '<button class="mini confirm" data-act="confirm" data-row="' + x.row + '">입금확인</button>';
+      receipt = '<span style="color:#bbb">—</span>';
     } else {
       pill = '<span class="pill apply">미입금</span>';
       action = '<button class="mini confirm" data-act="confirm" data-row="' + x.row + '">입금확인</button>';
+      receipt = '<span style="color:#bbb">—</span>';
     }
     action += '<button class="mini del" data-act="delete" data-id="' + esc(x.id) + '" data-name="' + esc(x.성명) + '">삭제</button>';
     tr.innerHTML = "<td>" + x.신청일시 + "</td><td>" + esc(x.성명) + "</td><td>" + esc(x.소속)
       + "</td><td>" + esc(x.이메일) + "</td><td>" + esc(x.연락처) + "</td><td>" + x.신청회차
-      + "</td><td>" + pill + "</td><td>" + action + "</td>";
+      + "</td><td>" + pill + "</td><td>" + action + "</td><td>" + receipt + "</td>";
     tb.appendChild(tr);
   });
 }
@@ -207,20 +252,81 @@ document.querySelector("#listTbl tbody").addEventListener("click", function (e) 
   if (act === "delete") { confirmDelete(btn.getAttribute("data-id"), btn.getAttribute("data-name")); return; }
   var row = parseInt(btn.getAttribute("data-row"), 10);
   if (act === "confirm") confirmPay(row);
-  else if (act === "receipt") sendReceipt(row, btn);
+  else if (act === "issue") openReceiptModal(row);
+  else if (act === "mail") sendReceipt(row, btn);
   else unconfirm(row);
 });
 
+// ===== 영수증 발행 모달 =====
+var RCPT_ROW = 0;
+
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+function openReceiptModal(row) {
+  var x = null;
+  DATA.list.forEach(function (it) { if (it.row === row) x = it; });
+  if (!x) return;
+  RCPT_ROW = row;
+  document.getElementById("rcptWho").textContent = x.성명 + " · " + x.신청회차;
+  document.getElementById("rcptMethod").value = x.결제방법 || "무통장입금";
+  // 결제일·시간 기본값: 기존 결제일시 → 입금확인일시 → 오늘 (형식 "yyyy-MM-dd HH:mm")
+  var base = x.결제일시 || x.입금확인일시 || "";
+  var m = base.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/);
+  if (m) {
+    document.getElementById("rcptDate").value = m[1];
+    document.getElementById("rcptTime").value = m[2].length === 4 ? "0" + m[2] : m[2];
+  } else {
+    var now = new Date();
+    document.getElementById("rcptDate").value = now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate());
+    document.getElementById("rcptTime").value = pad2(now.getHours()) + ":" + pad2(now.getMinutes());
+  }
+  document.getElementById("rcptErr").textContent = "";
+  document.getElementById("rcptModal").classList.add("open");
+}
+
+function closeReceiptModal() {
+  document.getElementById("rcptModal").classList.remove("open");
+}
+
+document.getElementById("rcptCancel").addEventListener("click", closeReceiptModal);
+document.getElementById("rcptModal").addEventListener("click", function (e) {
+  if (e.target === this) closeReceiptModal();
+});
+
+document.getElementById("rcptIssue").addEventListener("click", function () {
+  var btn = this;
+  var errEl = document.getElementById("rcptErr");
+  var method = document.getElementById("rcptMethod").value;
+  var date = document.getElementById("rcptDate").value;
+  var time = document.getElementById("rcptTime").value;
+  if (!date) { errEl.textContent = "결제일을 입력하세요."; return; }
+  if (!time) { errEl.textContent = "결제 시간을 입력하세요."; return; }
+  btn.disabled = true; btn.textContent = "발행 중…"; errEl.textContent = "";
+  run("adminIssueReceipt", [PW, RCPT_ROW, method, date, time]).then(function (j) {
+    if (j && j.ok) {
+      closeReceiptModal();
+      reload();
+      alert("영수증이 발행되었습니다. '이메일발송' 버튼으로 신청자에게 보낼 수 있습니다.");
+    } else {
+      errEl.textContent = "발행 실패: " + ((j && j.error) || "알 수 없음");
+    }
+  }).catch(function () {
+    errEl.textContent = "서버에 연결할 수 없습니다.";
+  }).then(function () {
+    btn.disabled = false; btn.textContent = "발행";
+  });
+});
+
 function sendReceipt(row, btn) {
-  if (!confirm("영수증 PDF를 생성하여 신청자 이메일로 발송합니다. 계속할까요?")) return;
+  if (!confirm("영수증 PDF를 신청자 이메일로 발송합니다. 계속할까요?")) return;
   btn.disabled = true; btn.textContent = "발송 중…";
-  run("adminReceipt", [PW, row]).then(function (j) {
+  run("adminSendReceipt", [PW, row]).then(function (j) {
     if (j && j.ok) alert("영수증을 발송했습니다: " + j.email);
     else alert("발송 실패: " + ((j && j.error) || "알 수 없음"));
   }).catch(function () {
     alert("서버에 연결할 수 없습니다.");
   }).then(function () {
-    btn.disabled = false; btn.textContent = "영수증출력";
+    btn.disabled = false; btn.textContent = "이메일발송";
   });
 }
 

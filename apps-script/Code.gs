@@ -67,7 +67,6 @@ function doGet(e) {
   }
   const action = params.action || 'status';
   if (action === 'status') return json_(publicStatus_());
-  if (action === 'testReceipt') return json_(handleTestReceipt_(params)); // 임시 검증용 (검증 후 제거)
   return json_({ ok: false, error: 'unknown' });
 }
 
@@ -304,19 +303,6 @@ function escHtml_(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
   });
-}
-
-// [임시] 영수증 PDF 렌더링 검증용 — 샘플 영수증을 스크립트 소유 계정으로 발송. 검증 후 이 함수와 doGet 라우트를 제거할 것.
-function handleTestReceipt_(params) {
-  if ((params.token || '') !== 'trx-7f3a9c2e51') return { ok: false, error: 'auth' };
-  const sample = ['TEST0000000000', new Date(), '홍길동', '유기농센터', 'isidor.yu@gmail.com', '010-1234-5678',
-    SESSIONS[0], '', '입금확인', new Date(), '신용카드', '2026-07-05 14:30', new Date(), 'HONG GIL DONG'];
-  const pdf = Utilities.newBlob(receiptHtml_(sample), MimeType.HTML, 'receipt.html')
-    .getAs(MimeType.PDF).setName('영수증_테스트.pdf');
-  GmailApp.sendEmail('isidor.yu@gmail.com', '[테스트] 영수증 렌더링 확인', '영수증 PDF 렌더링 테스트입니다.', {
-    name: FROM_NAME, attachments: [pdf],
-  });
-  return { ok: true };
 }
 
 // 영수증 HTML — 2026-07-07 확정 디자인 (이시도르교육 로고 + 결제방법/결제일시 + 영수인·사업자 정보)

@@ -111,7 +111,7 @@
     <h2 class="sec">회차별 현황</h2>
     <table id="summaryTbl">
       <thead><tr>
-        <th>회차</th><th class="num">정원</th><th class="num">입금확인</th>
+        <th>회차</th><th class="num">정원</th><th class="num">신청자수</th><th class="num">입금확인</th>
         <th class="num">미입금(신청)</th><th class="num">대기</th><th class="num">잔여석</th>
       </tr></thead>
       <tbody></tbody>
@@ -264,8 +264,9 @@ function render(j) {
   j.summary.forEach(function (s) {
     var tr = document.createElement("tr");
     var remain = s.잔여 === 0 ? '<span class="full">0 (마감)</span>' : s.잔여;
-    tr.innerHTML = "<td>" + s.회차 + "</td><td class='num'>" + s.정원 + "</td><td class='num'>"
-      + s.입금확인 + "</td><td class='num'>" + s.미입금 + "</td><td class='num'>" + s.대기
+    var total = (s.입금확인 || 0) + (s.미입금 || 0) + (s.대기 || 0); // 신청자수 = 해당 회차 전체 신청 건
+    tr.innerHTML = "<td>" + s.회차 + "</td><td class='num'>" + s.정원 + "</td><td class='num'><strong>" + total
+      + "</strong></td><td class='num'>" + s.입금확인 + "</td><td class='num'>" + s.미입금 + "</td><td class='num'>" + s.대기
       + "</td><td class='num'>" + remain + "</td>";
     sb.appendChild(tr);
   });

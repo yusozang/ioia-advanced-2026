@@ -103,7 +103,7 @@ function countPaidBySession_() {
   return paid;
 }
 
-// 회차별 전체 신청자수(신청·대기·입금확인 모두 포함) — 정원 마감(신청 차단) 판정 기준
+// 회차별 전체 신청자수(신청·대기·입금확인 모두 포함) — 정원 마감(대기 전환) 판정 기준
 function countAppliedBySession_() {
   const rows = getSheet_().getDataRange().getValues();
   const applied = {};
@@ -117,7 +117,16 @@ function countAppliedBySession_() {
 function publicStatus_() {
   const applied = countAppliedBySession_();
   const out = {};
-  SESSIONS.forEach(function (s) { out[s] = { applied: applied[s], full: applied[s] >= CAPACITY, capacity: CAPACITY }; });
+  SESSIONS.forEach(function (s) {
+    const n = applied[s] || 0;
+    out[s] = {
+      applied: n,
+      capacity: CAPACITY,
+      remaining: Math.max(0, CAPACITY - n),   // 잔여석
+      waiting: Math.max(0, n - CAPACITY),     // 현재 대기자 수
+      full: n >= CAPACITY,
+    };
+  });
   return { ok: true, sessions: out };
 }
 
@@ -136,24 +145,30 @@ function handleApply_(p) {
     return { ok: false, error: '개인정보 수집·이용에 동의해야 신청할 수 있습니다.' };
   }
 
-  // 정원 검사와 행 추가를 락으로 직렬화 — 동시 제출로 정원이 초과 접수되는 것을 방지
+  // 정원 검사와 행 추가를 락으로 직렬화 — 동시 제출로 정원·대기 순번이 어긋나는 것을 방지
   const lock = LockService.getScriptLock();
   try { lock.waitLock(10000); } catch (e) { return { ok: false, error: '접수가 몰려 처리가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.' }; }
-  let remaining;
+  let remaining = 0, waitRank = 0;
   try {
     const applied = countAppliedBySession_();
-    remaining = CAPACITY - (applied[sess] || 0);
-    if (remaining <= 0) {
-      return { ok: false, full: true, error: '해당 회차는 정원(' + CAPACITY + '명)이 마감되어 잔여석이 없습니다. 다른 회차를 선택해 주세요.' };
-    }
+    const before = applied[sess] || 0;
     const id = 'A' + new Date().getTime();
-    getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, '신청', '', '', '', '', nameEn]);
+    if (before >= CAPACITY) {
+      // 정원 초과 — 거부하지 않고 '대기' 상태로 접수. 순번 = 기존 초과 인원 + 1 (예: 32명 신청 상태 → 13번째)
+      waitRank = before - CAPACITY + 1;
+      getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, '대기', '', '', '', '', nameEn]);
+    } else {
+      getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, '신청', '', '', '', '', nameEn]);
+      remaining = CAPACITY - before - 1; // 본인 접수를 반영한 잔여석
+    }
     SpreadsheetApp.flush();
-    remaining = remaining - 1; // 본인 접수를 반영한 잔여석
   } finally {
     lock.releaseLock();
   }
-  try { sendApplyEmail_(email, name, sess, remaining); } catch (e) { /* 메일 실패해도 접수는 유지 */ }
+  // 입금 안내 메일은 정원 내 신청자에게만 발송 — 대기자는 팝업으로만 안내(입금 유도 방지)
+  if (!waitRank) {
+    try { sendApplyEmail_(email, name, sess, remaining); } catch (e) { /* 메일 실패해도 접수는 유지 */ }
+  }
   // 문의사항이 있으면 교육팀장에게 알림 메일 전달
   if (note) {
     try {
@@ -168,7 +183,8 @@ function handleApply_(p) {
         { name: FROM_NAME });
     } catch (e) { /* 알림 실패해도 접수는 유지 */ }
   }
-  return { ok: true, remaining: remaining };
+  if (waitRank) return { ok: true, waitlisted: true, waitRank: waitRank, remaining: 0 };
+  return { ok: true, waitlisted: false, remaining: remaining };
 }
 
 function handleList_(p) {

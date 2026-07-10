@@ -117,6 +117,34 @@ tbody tr:hover{background:var(--soft)}
 .form-status{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:.95rem;display:none}
 .form-status.ok{display:block;background:#eef8ee;color:#1f7a1f;border:1px solid #bfe3bf}
 .form-status.err{display:block;background:#fdecec;color:#b03030;border:1px solid #f0c2c2}
+.form-status.wait{display:block;background:#fff7ec;color:#8a5a00;border:1px solid #f2d9ae}
+
+/* 실시간 접수 현황 보드 */
+.seat-board{max-width:640px;margin:0 auto 26px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 24px}
+.seat-board .sb-title{font-weight:800;color:var(--primary);font-size:1.02rem;margin-bottom:4px}
+.seat-board .sb-updated{font-size:.8rem;color:var(--secondary);margin-bottom:10px}
+.seat-board table{margin-top:0;font-size:.92rem}
+.seat-board td.num,.seat-board th.num{text-align:right;white-space:nowrap}
+.seat-board .left-badge{display:inline-block;min-width:52px;text-align:center;font-weight:800;border-radius:6px;padding:2px 8px;background:#eef8ee;color:#1f7a1f}
+.seat-board .left-badge.low{background:#fff7ec;color:#8a5a00}
+.seat-board .left-badge.full{background:#fdecec;color:#b03030}
+.seat-board .wait-badge{color:#8a5a00;font-weight:700}
+
+/* 제출 결과 팝업(모달) */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-overlay[hidden]{display:none}
+.modal{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:34px 30px 28px;text-align:center;box-shadow:0 18px 60px rgba(0,0,0,.28)}
+.modal .m-icon{width:60px;height:60px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:30px}
+.modal .m-icon.ok{background:#eef8ee;color:#1f7a1f}
+.modal .m-icon.wait{background:#fff7ec;color:#c07800}
+.modal h3{font-size:1.25rem;font-weight:800;color:var(--ink);margin-bottom:10px}
+.modal .m-body{font-size:.96rem;color:#444;line-height:1.75}
+.modal .m-body strong{color:var(--primary)}
+.modal .m-rank{font-size:1.45rem;font-weight:900;color:var(--primary);margin:12px 0}
+.modal .m-actions{margin-top:22px;display:flex;flex-direction:column;gap:10px}
+.modal .m-actions a{display:block;padding:12px;background:var(--primary);color:#fff;border-radius:9px;font-weight:700}
+.modal .m-close{padding:11px;background:#f1ecec;color:#333;border:none;border-radius:9px;font-weight:700;font-size:.95rem;cursor:pointer;font-family:inherit}
+.modal .m-close:hover{background:#e6dede}
 
 /* 결제(계좌이체) */
 .pay-box{border:1px solid var(--line);border-radius:14px;padding:28px;text-align:center;max-width:640px;margin:0 auto;background:#fff}
@@ -284,7 +312,7 @@ footer a{color:var(--accent)}
       <div class="info"><div class="big">7/20</div><div class="lbl">10월 과정 접수 마감</div></div>
     </div>
     <div class="callout">
-      정원이 차면 접수 마감일 이전이라도 조기 마감됩니다. ISO 17065는 수·목·금 세 회차 중 <strong>참여 가능한 하루</strong>를 선택해 신청하세요.
+      정원(20명)이 찬 회차에 신청하면 <strong>대기자로 접수</strong>되며, 잔여석이 생기면 대기 순번대로 연락드립니다. ISO 17065는 수·목·금 세 회차 중 <strong>참여 가능한 하루</strong>를 선택해 신청하세요 — 신청 폼 위의 실시간 접수 현황에서 잔여석이 있는 회차를 확인할 수 있습니다.
     </div>
   </div>
 </section>
@@ -293,7 +321,15 @@ footer a{color:var(--accent)}
 <section id="apply">
   <div class="wrap">
     <h2 class="sec" style="text-align:center">교육 신청</h2>
-    <p class="sub" style="text-align:center">아래 양식을 제출하면 입력하신 이메일로 접수 안내가 발송되며, 수강료 입금이 확인되면 접수가 최종 완료됩니다.</p>
+    <p class="sub" style="text-align:center">아래 양식을 제출하면 입력하신 이메일로 접수 안내가 발송되며, 수강료 입금이 확인되면 접수가 최종 완료됩니다.<br />정원이 찬 회차는 대기자로 접수되며, 잔여석이 생기면 대기 순번대로 연락드립니다.</p>
+    <div class="seat-board" id="seatBoard" hidden>
+      <div class="sb-title">실시간 접수 현황</div>
+      <div class="sb-updated" id="sbUpdated"></div>
+      <table>
+        <thead><tr><th>회차</th><th class="num">정원</th><th class="num">잔여석</th><th class="num">대기자</th></tr></thead>
+        <tbody id="sbBody"></tbody>
+      </table>
+    </div>
     <form class="form-card" id="applyForm">
       <div class="form-row">
         <label>성명 <span class="req">*</span></label>
@@ -320,12 +356,12 @@ footer a{color:var(--accent)}
         <label>신청 회차 <span class="req">*</span></label>
         <select name="신청회차" required>
           <option value="" disabled selected>회차를 선택하세요</option>
-          <option>매스밸런스 — 9월 18일(금)</option>
-          <option>ISO 17065 — 10월 14일(수)</option>
-          <option>ISO 17065 — 10월 15일(목)</option>
-          <option>ISO 17065 — 10월 16일(금)</option>
+          <option value="매스밸런스 — 9월 18일(금)">매스밸런스 — 9월 18일(금)</option>
+          <option value="ISO 17065 — 10월 14일(수)">ISO 17065 — 10월 14일(수)</option>
+          <option value="ISO 17065 — 10월 15일(목)">ISO 17065 — 10월 15일(목)</option>
+          <option value="ISO 17065 — 10월 16일(금)">ISO 17065 — 10월 16일(금)</option>
         </select>
-        <div class="form-note">각 회차 정원은 20명이며, 정원이 차면 해당 회차 신청이 마감됩니다.</div>
+        <div class="form-note" id="sessNote">각 회차 정원은 20명입니다. 정원이 찬 회차도 대기자로 신청할 수 있으며, 잔여석이 생기면 대기 순번대로 연락드립니다.</div>
       </div>
       <div class="form-row">
         <label>문의 사항 (선택)</label>
@@ -392,8 +428,8 @@ footer a{color:var(--accent)}
       <dd>교육 종료 후 IOIA Exam Form으로 평가하며, 80% 이상 득점 시 IOIA 공식 수료증을 발급합니다.</dd>
       <dt>온라인은 어떤 방식인가요?</dt>
       <dd>Zoom 기반 실시간 화상교육이며, 그룹 실습은 Breakout Room으로 진행합니다. 교육 후 30일간 다시보기를 제공합니다.</dd>
-      <dt>접수가 마감되면 어떻게 하나요?</dt>
-      <dd>각 회차 정원(20명)이 차면 조기 마감되어 신청할 수 없습니다. ISO 17065는 내용이 동일한 다른 요일 회차에 잔여석이 있으면 그 회차를 권해드립니다.</dd>
+      <dt>정원이 찬 회차에 신청하면 어떻게 되나요?</dt>
+      <dd>신청은 접수되며 자동으로 대기자 명단에 오릅니다. 제출 직후 몇 번째 대기자인지 화면에 안내되고, 잔여석이 생기면 대기 순번대로 개별 연락드립니다. 대기자는 연락을 받기 전까지 수강료를 입금하지 않으셔도 됩니다. ISO 17065는 내용이 동일한 다른 요일 회차에 잔여석이 있으면 그 회차 신청을 권해드립니다.</dd>
     </dl>
   </div>
 </section>
@@ -415,6 +451,16 @@ footer a{color:var(--accent)}
 </footer>
 
 <button id="toTop" type="button" aria-label="맨 위로 올라가기" title="맨 위로">↑</button>
+
+<!-- 제출 결과 팝업 -->
+<div class="modal-overlay" id="resultModal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="modal">
+    <div class="m-icon" id="mIcon">✓</div>
+    <h3 id="mTitle"></h3>
+    <div class="m-body" id="mBody"></div>
+    <div class="m-actions" id="mActions"></div>
+  </div>
+</div>
 
 <script>
 // --- 맨 위로 버튼 ---
@@ -441,23 +487,79 @@ const API_READY = API_URL && !API_URL.includes("REPLACE_WITH");
 // --- 푸터 관리자 링크 (Apps Script 관리자 페이지로 연결) ---
 if (API_READY) document.getElementById("adminLink").href = API_URL + "?page=admin";
 
-// --- 회차별 정원 마감 표시 (공개 현황 조회) ---
-if (API_READY) {
+// --- 회차별 실시간 접수 현황 (잔여석·대기자) ---
+// 페이지 로드 시 + 30초마다 + 창 포커스 복귀 시 갱신. 마감 회차도 선택 가능(대기자 접수).
+var SESSION_STATUS = {}; // 최근 조회 결과 (제출 전 대기 안내에 사용)
+
+function renderStatus(sessions) {
+  SESSION_STATUS = sessions || {};
+  var body = document.getElementById("sbBody");
+  var rows = "";
+  document.querySelectorAll('#applyForm select[name="신청회차"] option').forEach(function (opt) {
+    if (!opt.value) return;
+    var s = sessions[opt.value];
+    if (!s) return;
+    // 드롭다운 라벨에 현황 표시 (value는 고정이므로 제출 값에 영향 없음)
+    opt.textContent = s.full
+      ? opt.value + " — 정원 마감 · 대기 " + s.waiting + "명"
+      : opt.value + " — 잔여 " + s.remaining + "석";
+    var badge = s.full
+      ? '<span class="left-badge full">마감</span>'
+      : '<span class="left-badge' + (s.remaining <= 5 ? " low" : "") + '">' + s.remaining + "석</span>";
+    var wait = s.waiting > 0 ? '<span class="wait-badge">' + s.waiting + "명</span>" : "—";
+    rows += "<tr><td>" + opt.value + '</td><td class="num">' + s.capacity
+      + '</td><td class="num">' + badge + '</td><td class="num">' + wait + "</td></tr>";
+  });
+  if (rows) {
+    body.innerHTML = rows;
+    document.getElementById("seatBoard").hidden = false;
+    var now = new Date();
+    function z(n) { return (n < 10 ? "0" : "") + n; }
+    document.getElementById("sbUpdated").textContent =
+      now.getFullYear() + "-" + z(now.getMonth() + 1) + "-" + z(now.getDate())
+      + " " + z(now.getHours()) + ":" + z(now.getMinutes()) + ":" + z(now.getSeconds()) + " 기준";
+  }
+  updateSessNote();
+}
+
+function refreshStatus() {
+  if (!API_READY) return;
   fetch(API_URL + "?action=status")
     .then(function (r) { return r.json(); })
-    .then(function (j) {
-      if (!j || !j.ok) return;
-      document.querySelectorAll('#applyForm select[name="신청회차"] option').forEach(function (opt) {
-        var key = opt.value || opt.textContent;
-        var s = j.sessions[key];
-        if (s && s.full) {
-          opt.textContent = opt.textContent + " — 정원 마감(잔여석 없음)";
-          opt.disabled = true; // 마감 회차는 선택 자체를 차단
-        }
-      });
-    })
+    .then(function (j) { if (j && j.ok && j.sessions) renderStatus(j.sessions); })
     .catch(function () {});
 }
+
+// 선택한 회차가 마감이면 대기 접수 예고를 드롭다운 아래에 표시
+function updateSessNote() {
+  var sel = document.querySelector('#applyForm select[name="신청회차"]');
+  var note = document.getElementById("sessNote");
+  var s = sel && sel.value ? SESSION_STATUS[sel.value] : null;
+  if (s && s.full) {
+    note.innerHTML = "<strong style='color:#b03030'>이 회차는 정원(20명)이 마감되었습니다.</strong> 지금 제출하시면 <strong>"
+      + (s.waiting + 1) + "번째 대기자</strong>로 접수되며, 잔여석이 생기면 순번대로 연락드립니다.";
+  } else {
+    note.textContent = "각 회차 정원은 20명입니다. 정원이 찬 회차도 대기자로 신청할 수 있으며, 잔여석이 생기면 대기 순번대로 연락드립니다.";
+  }
+}
+
+refreshStatus();
+setInterval(refreshStatus, 30000);
+window.addEventListener("focus", refreshStatus);
+document.querySelector('#applyForm select[name="신청회차"]').addEventListener("change", updateSessNote);
+
+// --- 제출 결과 팝업(모달) ---
+var modal = document.getElementById("resultModal");
+function showModal(kind, title, bodyHtml, actionsHtml) {
+  document.getElementById("mIcon").className = "m-icon " + kind;
+  document.getElementById("mIcon").textContent = kind === "ok" ? "✓" : "⏳";
+  document.getElementById("mTitle").textContent = title;
+  document.getElementById("mBody").innerHTML = bodyHtml;
+  document.getElementById("mActions").innerHTML =
+    (actionsHtml || "") + '<button type="button" class="m-close" onclick="document.getElementById(\'resultModal\').hidden=true">닫기</button>';
+  modal.hidden = false;
+}
+modal.addEventListener("click", function (e) { if (e.target === modal) modal.hidden = true; });
 
 // --- 신청 폼 처리 ---
 const form = document.getElementById("applyForm");
@@ -495,6 +597,7 @@ form.addEventListener("submit", async function (e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(form).entries());
   data.action = "apply";
+  const sess = data["신청회차"] || "";
 
   statusEl.className = "form-status";
   statusEl.style.display = "block";
@@ -510,18 +613,34 @@ form.addEventListener("submit", async function (e) {
     // Content-Type을 지정하지 않아 text/plain으로 전송 → CORS preflight 회피 (Apps Script 호환)
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(data) });
     const j = await res.json();
-    if (j.ok) {
+    if (j.ok && j.waitlisted) {
+      // 정원 초과 — 대기자 접수. 팝업으로 순번 안내 (입금 안내 메일은 발송되지 않음)
+      showModal("wait", "정원 초과 — 대기자로 접수되었습니다",
+        "선택하신 회차 <strong>" + sess + "</strong>는 정원(20명)이 초과되어"
+        + '<div class="m-rank">' + j.waitRank + "번째 대기자로 접수되었습니다.</div>"
+        + "잔여석이 생기면 대기 순번대로 입력하신 연락처·이메일로 개별 연락드립니다.<br />"
+        + "<strong>연락을 받기 전까지는 수강료를 입금하지 마세요.</strong>");
+      statusEl.className = "form-status wait";
+      statusEl.textContent = "정원 초과 — " + j.waitRank + "번째 대기자로 접수되었습니다. 잔여석이 생기면 순번대로 연락드립니다.";
+      form.reset();
+    } else if (j.ok) {
+      // 정상 접수 — 즉시 확인 팝업 (중복 제출 방지 목적) + 안내 메일 발송됨
+      showModal("ok", "신청이 정상적으로 접수되었습니다",
+        "<strong>" + sess + "</strong> 신청이 접수되었습니다."
+        + (typeof j.remaining === "number" ? "<br />신청 후 잔여석: <strong>" + j.remaining + "석</strong> / 정원 20명" : "")
+        + "<br />입력하신 이메일로 접수 안내와 입금 계좌를 보내드렸습니다.<br />수강료 입금이 확인되면 접수가 최종 완료됩니다.<br /><span style='color:#8a5a00'>같은 회차를 다시 제출하실 필요는 없습니다.</span>",
+        '<a href="https://isidor.kr/20/?idx=3" target="_blank" rel="noopener">수강료 결제하기 →</a>');
       statusEl.className = "form-status ok";
-      statusEl.textContent = "신청서가 제출되었습니다. 아래 결제 버튼으로 수강료를 결제하시면 접수가 최종 완료됩니다.";
-      statusEl.innerHTML += ' <a href="https://isidor.kr/20/?idx=3" target="_blank" style="display:inline-block;margin-top:12px;padding:10px 24px;background:#800000;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">수강료 결제하기 →</a>';
+      statusEl.textContent = "신청서가 제출되었습니다. 수강료를 결제하시면 접수가 최종 완료됩니다.";
       form.reset();
     } else if (j.full) {
-      // 정원 마감 — 잔여석 없음 안내 (서버가 최종 판정)
+      // 구버전 서버 호환 — 정원 마감 거부 응답
       statusEl.className = "form-status err";
       statusEl.textContent = j.error || "해당 회차는 정원이 마감되어 잔여석이 없습니다. 다른 회차를 선택해 주세요.";
     } else {
       throw new Error(j.error || "server");
     }
+    refreshStatus(); // 접수 반영된 잔여석·대기자 수로 즉시 갱신
   } catch (err) {
     statusEl.className = "form-status err";
     statusEl.innerHTML = '제출에 실패했습니다. <a href="mailto:' + CONTACT_EMAIL + '">' + CONTACT_EMAIL + '</a> 로 직접 보내주세요.';

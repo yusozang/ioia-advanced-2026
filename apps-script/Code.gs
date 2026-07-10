@@ -103,10 +103,21 @@ function countPaidBySession_() {
   return paid;
 }
 
+// 회차별 전체 신청자수(신청·대기·입금확인 모두 포함) — 정원 마감(신청 차단) 판정 기준
+function countAppliedBySession_() {
+  const rows = getSheet_().getDataRange().getValues();
+  const applied = {};
+  SESSIONS.forEach(function (s) { applied[s] = 0; });
+  for (let i = 1; i < rows.length; i++) {
+    if (applied.hasOwnProperty(rows[i][6])) applied[rows[i][6]]++;
+  }
+  return applied;
+}
+
 function publicStatus_() {
-  const paid = countPaidBySession_();
+  const applied = countAppliedBySession_();
   const out = {};
-  SESSIONS.forEach(function (s) { out[s] = { paid: paid[s], full: paid[s] >= CAPACITY, capacity: CAPACITY }; });
+  SESSIONS.forEach(function (s) { out[s] = { applied: applied[s], full: applied[s] >= CAPACITY, capacity: CAPACITY }; });
   return { ok: true, sessions: out };
 }
 
@@ -125,14 +136,24 @@ function handleApply_(p) {
     return { ok: false, error: '개인정보 수집·이용에 동의해야 신청할 수 있습니다.' };
   }
 
-  const paid = countPaidBySession_();
-  const remaining = Math.max(0, CAPACITY - (paid[sess] || 0));
-  const isWaitlist = remaining <= 0;
-  const status = isWaitlist ? '대기' : '신청';
-  const id = 'A' + new Date().getTime();
-  getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, status, '', '', '', '', nameEn]);
-  SpreadsheetApp.flush();
-  try { sendApplyEmail_(email, name, sess, isWaitlist, remaining); } catch (e) { /* 메일 실패해도 접수는 유지 */ }
+  // 정원 검사와 행 추가를 락으로 직렬화 — 동시 제출로 정원이 초과 접수되는 것을 방지
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return { ok: false, error: '접수가 몰려 처리가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.' }; }
+  let remaining;
+  try {
+    const applied = countAppliedBySession_();
+    remaining = CAPACITY - (applied[sess] || 0);
+    if (remaining <= 0) {
+      return { ok: false, full: true, error: '해당 회차는 정원(' + CAPACITY + '명)이 마감되어 잔여석이 없습니다. 다른 회차를 선택해 주세요.' };
+    }
+    const id = 'A' + new Date().getTime();
+    getSheet_().appendRow([id, new Date(), name, org, email, phone, sess, note, '신청', '', '', '', '', nameEn]);
+    SpreadsheetApp.flush();
+    remaining = remaining - 1; // 본인 접수를 반영한 잔여석
+  } finally {
+    lock.releaseLock();
+  }
+  try { sendApplyEmail_(email, name, sess, remaining); } catch (e) { /* 메일 실패해도 접수는 유지 */ }
   // 문의사항이 있으면 교육팀장에게 알림 메일 전달
   if (note) {
     try {
@@ -142,13 +163,12 @@ function handleApply_(p) {
         + '· 소속: ' + org + '\n'
         + '· 이메일: ' + email + '\n'
         + '· 연락처: ' + phone + '\n'
-        + '· 신청회차: ' + sess + '\n'
-        + '· 상태: ' + status + '\n\n'
+        + '· 신청회차: ' + sess + '\n\n'
         + '--- 문의사항 ---\n' + note + '\n',
         { name: FROM_NAME });
     } catch (e) { /* 알림 실패해도 접수는 유지 */ }
   }
-  return { ok: true, waitlist: isWaitlist, remaining: remaining };
+  return { ok: true, remaining: remaining };
 }
 
 function handleList_(p) {
@@ -171,7 +191,9 @@ function handleList_(p) {
       if (x.상태 === '입금확인') return;
       if (x.상태 === '대기') wait++; else applied++;
     });
-    return { 회차: s, 정원: CAPACITY, 입금확인: paid[s] || 0, 미입금: applied, 대기: wait, 잔여: Math.max(0, CAPACITY - (paid[s] || 0)) };
+    // 잔여석 = 정원 − 신청자수(입금확인+미입금+대기) — 신청 차단 기준과 동일
+    const total = (paid[s] || 0) + applied + wait;
+    return { 회차: s, 정원: CAPACITY, 입금확인: paid[s] || 0, 미입금: applied, 대기: wait, 잔여: Math.max(0, CAPACITY - total) };
   });
   return { ok: true, summary: summary, list: list };
 }
@@ -379,12 +401,9 @@ function formatPhone_(raw) {
 }
 
 // ===== 이메일 (발신 주소 = 스크립트 소유 계정) =====
-function sendApplyEmail_(email, name, sess, isWaitlist, remaining) {
-  const subject = isWaitlist
-    ? '[2026 IOIA 심화과정] 대기자로 등록되었습니다'
-    : '[2026 IOIA 심화과정] 신청이 접수되었습니다';
-  const body = isWaitlist ? waitlistBody_(name, sess) : applyBody_(name, sess, remaining);
-  GmailApp.sendEmail(email, subject, body, { name: FROM_NAME });
+function sendApplyEmail_(email, name, sess, remaining) {
+  GmailApp.sendEmail(email, '[2026 IOIA 심화과정] 신청이 접수되었습니다',
+    applyBody_(name, sess, remaining), { name: FROM_NAME });
 }
 
 function sendConfirmEmail_(email, name, sess) {
@@ -395,7 +414,7 @@ function applyBody_(name, sess, remaining) {
   return name + ' 님, 안녕하세요.\n\n'
     + '2026 IOIA 심화과정 "' + sess + '" 신청이 정상적으로 제출되었습니다.\n'
     + '수강료 입금이 확인되면 접수가 최종 완료됩니다.\n\n'
-    + '· 신청 시점 잔여석: ' + remaining + '석 / 정원 ' + CAPACITY + '명\n\n'
+    + '· 신청 후 잔여석: ' + remaining + '석 / 정원 ' + CAPACITY + '명\n\n'
     + '아래 계좌로 입금해 주세요.\n'
     + '· 수강료: 500,000원 (1인 · 1과정)\n'
     + '· 입금 은행: 기업은행(IBK)\n'
@@ -403,20 +422,8 @@ function applyBody_(name, sess, remaining) {
     + '· 예금주: 이시도르지속가능연구소(주)\n'
     + '· 입금자명: 신청자 본인 성함\n\n'
     + '※ 접수는 입금이 확인된 순서(입금자 순)로 처리됩니다.\n'
-    + '※ 신청서를 제출하셨더라도 입금이 지연되어 그 사이 정원(' + CAPACITY + '명)이 마감되면,\n'
-    + '   해당 회차는 대기자로 순연 처리될 수 있습니다. 빠른 입금을 권해드립니다.\n\n'
+    + '※ 입금이 장기간 확인되지 않으면 신청이 취소될 수 있습니다. 빠른 입금을 권해드립니다.\n\n'
     + '입금이 확인되면 "접수 완료" 안내 메일을 다시 보내드리겠습니다.\n\n'
-    + '문의: ' + CONTACT + '\n이시도르 지속가능연구소';
-}
-
-function waitlistBody_(name, sess) {
-  return name + ' 님, 안녕하세요.\n\n'
-    + '2026 IOIA 심화과정 "' + sess + '" 회차는 정원(' + CAPACITY + '명)이 마감되어\n'
-    + '현재 잔여석이 없어, 대기자 명단에 등록되었습니다. (잔여석: 0석)\n\n'
-    + '접수는 입금이 확인된 순서(입금자 순)로 처리되며,\n'
-    + '결원이 발생하면 대기 신청 순서대로 개별 안내드리겠습니다.\n'
-    + '다른 회차(특히 ISO 17065 수·목·금 회차)에 여석이 있을 수 있으니,\n'
-    + '다른 요일 수강을 원하시면 본 메일에 회신해 주세요.\n\n'
     + '문의: ' + CONTACT + '\n이시도르 지속가능연구소';
 }
 
